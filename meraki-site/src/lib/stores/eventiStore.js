@@ -1,10 +1,16 @@
 import { writable, get } from 'svelte/store';
 import { supabase } from '$lib/supabaseClient';
 import { deleteMenuImage } from '$lib/utils/imageUpload';
+import { browser } from '$app/environment';
 
 export const eventiStore = writable([]);
 export const eventiLoading = writable(true);
 export const eventiError = writable(null);
+
+// Auto-carica gli eventi quando lo store viene importato (solo lato browser)
+if (browser) {
+    loadEventi();
+}
 
 // Carica tutti gli eventi
 export async function loadEventi() {

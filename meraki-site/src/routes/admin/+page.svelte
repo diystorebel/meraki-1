@@ -6,7 +6,6 @@
 	import { galleryStore, loadGallery, addGalleryImage, deleteGalleryImage as deleteGalleryImageFromDb, updateGalleryOrder, updateGalleryAltText } from '$lib/stores/galleryStore.js';
 	import { uploadMenuImage, deleteMenuImage, uploadGalleryImage, deleteGalleryImage } from '$lib/utils/imageUpload.js';
 	import { Lock, Package, Tag, Eye, Camera, Plus, Search, X, Edit, Trash2, Check, FileText, DollarSign, ArrowLeft, MousePointerClick, Home, Calendar, Clock, Image as ImageIcon, GripVertical } from 'lucide-svelte';
-	import { onMount } from 'svelte';
 
 	let email = '';
 	let password = '';
@@ -414,17 +413,6 @@
 		showErrorModal = true;
 	}
 
-	// Inizializza gli store al caricamento della pagina admin
-	onMount(async () => {
-		console.log('Admin onMount: caricamento eventi e gallery...');
-		// Carica eventi e gallery per avere i conteggi corretti nella dashboard
-		await loadEventi();
-		await loadGallery();
-		console.log('Admin onMount: caricamento completato', {
-			eventi: $eventiStore.length,
-			gallery: $galleryStore.length
-		});
-	});
 </script>
 
 {#if $authLoading}
@@ -476,20 +464,6 @@
 		<!-- Home Section -->
 		{#if activeSection === 'home'}
 			<div class="content">
-				<!-- Debug button -->
-				<div style="margin-bottom: 1rem; text-align: center;">
-					<button class="btn-primary" on:click={async () => {
-						console.log('Ricaricamento manuale...');
-						await loadEventi();
-						await loadGallery();
-						console.log('Dati ricaricati:', {
-							eventi: $eventiStore.length,
-							gallery: $galleryStore.length
-						});
-					}}>
-						🔄 Ricarica Contatori (Debug)
-					</button>
-				</div>
 				<div class="home-grid">
 					<div class="nav-card" on:click={() => activeSection = 'products'}>
 						<div class="nav-icon">

@@ -1,8 +1,14 @@
 import { writable, get } from 'svelte/store';
 import { supabase } from '$lib/supabaseClient';
+import { browser } from '$app/environment';
 
 export const galleryStore = writable([]);
 export const galleryLoading = writable(false);
+
+// Auto-carica la gallery quando lo store viene importato (solo lato browser)
+if (browser) {
+    loadGallery();
+}
 
 /**
  * Carica tutte le immagini della gallery dal database
