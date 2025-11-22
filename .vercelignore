@@ -1,0 +1,17 @@
+# Ignora file non necessari per il deploy
+node_modules
+.git
+*.log
+.DS_Store
+.env.local
+.env.development
+.env.test
+
+# File di sviluppo
+foto/
+DOCS/
+meraki-digital-menu.html
+
+# File temporanei
+*.tmp
+*.temp

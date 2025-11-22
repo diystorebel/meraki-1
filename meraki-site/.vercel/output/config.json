@@ -1,0 +1,59 @@
+{
+	"version": 3,
+	"routes": [
+		{
+			"src": "/_app/immutable/.+",
+			"headers": {
+				"cache-control": "public, immutable, max-age=31536000"
+			}
+		},
+		{
+			"handle": "filesystem"
+		},
+		{
+			"src": "^/?(?:/__data.json)?$",
+			"dest": "/"
+		},
+		{
+			"src": "^/admin/?(?:/__data.json)?$",
+			"dest": "/admin"
+		},
+		{
+			"src": "^/chi-siamo/?(?:/__data.json)?$",
+			"dest": "/chi-siamo"
+		},
+		{
+			"src": "^/contatti/?(?:/__data.json)?$",
+			"dest": "/contatti"
+		},
+		{
+			"src": "^/cookie-policy/?(?:/__data.json)?$",
+			"dest": "/cookie-policy"
+		},
+		{
+			"src": "^/eventi/?(?:/__data.json)?$",
+			"dest": "/eventi"
+		},
+		{
+			"src": "^/gallery/?(?:/__data.json)?$",
+			"dest": "/gallery"
+		},
+		{
+			"src": "^/lavora-con-noi/?(?:/__data.json)?$",
+			"dest": "/lavora-con-noi"
+		},
+		{
+			"src": "^/menu/?(?:/__data.json)?$",
+			"dest": "/menu"
+		},
+		{
+			"src": "^/privacy-policy/?(?:/__data.json)?$",
+			"dest": "/privacy-policy"
+		},
+		{
+			"src": "/.*",
+			"dest": "/![-]/catchall"
+		}
+	],
+	"overrides": {}
+}
