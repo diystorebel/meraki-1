@@ -67,28 +67,42 @@
 		loading = true;
 
 		try {
-			// 1. Upload CV su Supabase Storage
-			const timestamp = Date.now();
-			const fileExt = cvFile.name.split('.').pop();
-			const fileName = `${timestamp}_${cognome}_${nome}.${fileExt}`;
-			
-			const { data: uploadData, error: uploadError } = await supabase.storage
-				.from('candidature')
-				.upload(fileName, cvFile);
+			// Converti file in base64 per l'invio
+			const fileBase64 = await new Promise((resolve, reject) => {
+				const reader = new FileReader();
+				reader.onload = () => resolve(reader.result.split(',')[1]);
+				reader.onerror = reject;
+				reader.readAsDataURL(cvFile);
+			});
 
-			if (uploadError) {
-				console.error('Upload error:', uploadError);
-				errorMessage = 'Errore upload CV: ' + uploadError.message;
-				loading = false;
-				return;
+			// Prepara dati per l'invio email
+			const candidaturaData = {
+				nome: nome.trim(),
+				cognome: cognome.trim(),
+				email: email.trim(),
+				telefono: telefono.trim(),
+				messaggio: messaggio.trim(),
+				cv_filename: cvFile.name,
+				cv_base64: fileBase64,
+				cv_mimetype: cvFile.type
+			};
+
+			// Invio tramite Edge Function
+			const response = await fetch('/api/send-candidatura', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(candidaturaData)
+			});
+
+			const result = await response.json();
+
+			if (!response.ok) {
+				throw new Error(result.error || 'Errore invio email');
 			}
 
-			// 2. Ottieni URL pubblico
-			const { data: { publicUrl } } = supabase.storage
-				.from('candidature')
-				.getPublicUrl(fileName);
-
-			// 3. Salva candidatura nel database
+			// Salva candidatura nel database (senza CV)
 			const { error: dbError } = await supabase
 				.from('candidature')
 				.insert({
@@ -97,18 +111,13 @@
 					email: email.trim(),
 					telefono: telefono.trim(),
 					messaggio: messaggio.trim(),
-					cv_url: publicUrl,
-					cv_filename: fileName,
+					cv_filename: cvFile.name,
 					consenso_privacy: true
 				});
 
 			if (dbError) {
 				console.error('Database error:', dbError);
-				// Pulizia: elimina file caricato se salvataggio DB fallisce
-				await supabase.storage.from('candidature').remove([fileName]);
-				errorMessage = 'Errore salvataggio: ' + dbError.message;
-				loading = false;
-				return;
+				// Non bloccare se il DB fallisce, l'email è già stata inviata
 			}
 
 			// Successo
@@ -127,8 +136,8 @@
 			}
 
 		} catch (err) {
-			console.error('Errore generico:', err);
-			errorMessage = 'Errore imprevisto. Riprova.';
+			console.error('Errore invio:', err);
+			errorMessage = 'Errore invio candidatura: ' + err.message;
 		} finally {
 			loading = false;
 		}
