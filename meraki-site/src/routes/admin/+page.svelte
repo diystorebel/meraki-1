@@ -414,18 +414,16 @@
 		showErrorModal = true;
 	}
 
-	// Inizializza gli store quando l'utente è autenticato
-	onMount(() => {
-		// Aspetta che l'autenticazione sia completata
-		const unsubscribe = isAuthenticated.subscribe(async (authenticated) => {
-			if (authenticated) {
-				// Carica eventi e gallery per avere i conteggi corretti nella dashboard
-				await loadEventi();
-				await loadGallery();
-			}
+	// Inizializza gli store al caricamento della pagina admin
+	onMount(async () => {
+		console.log('Admin onMount: caricamento eventi e gallery...');
+		// Carica eventi e gallery per avere i conteggi corretti nella dashboard
+		await loadEventi();
+		await loadGallery();
+		console.log('Admin onMount: caricamento completato', {
+			eventi: $eventiStore.length,
+			gallery: $galleryStore.length
 		});
-
-		return unsubscribe;
 	});
 </script>
 
@@ -478,6 +476,20 @@
 		<!-- Home Section -->
 		{#if activeSection === 'home'}
 			<div class="content">
+				<!-- Debug button -->
+				<div style="margin-bottom: 1rem; text-align: center;">
+					<button class="btn-primary" on:click={async () => {
+						console.log('Ricaricamento manuale...');
+						await loadEventi();
+						await loadGallery();
+						console.log('Dati ricaricati:', {
+							eventi: $eventiStore.length,
+							gallery: $galleryStore.length
+						});
+					}}>
+						🔄 Ricarica Contatori (Debug)
+					</button>
+				</div>
 				<div class="home-grid">
 					<div class="nav-card" on:click={() => activeSection = 'products'}>
 						<div class="nav-icon">
@@ -499,7 +511,10 @@
 							<span>{$categoriesStore.length} categorie</span>
 						</div>
 					</div>
-					<div class="nav-card" on:click={() => { activeSection = 'eventi'; loadEventi(); }}>
+					<div class="nav-card" on:click={async () => { 
+						activeSection = 'eventi'; 
+						await loadEventi(); 
+					}}>
 						<div class="nav-icon">
 							<Calendar size={64} strokeWidth={1.5} />
 						</div>
@@ -509,7 +524,10 @@
 							<span>{$eventiStore.length} eventi</span>
 						</div>
 					</div>
-					<div class="nav-card" on:click={() => { activeSection = 'gallery'; loadGallery(); }}>
+					<div class="nav-card" on:click={async () => { 
+						activeSection = 'gallery'; 
+						await loadGallery(); 
+					}}>
 						<div class="nav-icon">
 							<ImageIcon size={64} strokeWidth={1.5} />
 						</div>
