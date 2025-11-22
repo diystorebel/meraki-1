@@ -6,6 +6,7 @@
 	import { galleryStore, loadGallery, addGalleryImage, deleteGalleryImage as deleteGalleryImageFromDb, updateGalleryOrder, updateGalleryAltText } from '$lib/stores/galleryStore.js';
 	import { uploadMenuImage, deleteMenuImage, uploadGalleryImage, deleteGalleryImage } from '$lib/utils/imageUpload.js';
 	import { Lock, Package, Tag, Eye, Camera, Plus, Search, X, Edit, Trash2, Check, FileText, DollarSign, ArrowLeft, MousePointerClick, Home, Calendar, Clock, Image as ImageIcon, GripVertical } from 'lucide-svelte';
+	import { onMount } from 'svelte';
 
 	let email = '';
 	let password = '';
@@ -351,6 +352,20 @@
 		draggedItem = null;
 		dragOverItem = null;
 	}
+
+	// Inizializza gli store quando l'utente è autenticato
+	onMount(() => {
+		// Aspetta che l'autenticazione sia completata
+		const unsubscribe = isAuthenticated.subscribe(async (authenticated) => {
+			if (authenticated) {
+				// Carica eventi e gallery per avere i conteggi corretti nella dashboard
+				await loadEventi();
+				await loadGallery();
+			}
+		});
+
+		return unsubscribe;
+	});
 </script>
 
 {#if $authLoading}
