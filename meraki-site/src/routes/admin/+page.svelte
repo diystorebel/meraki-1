@@ -51,6 +51,24 @@
 	let draggedItem = null;
 	let dragOverItem = null;
 
+	// Modal System
+	let showConfirmModal = false;
+	let showErrorModal = false;
+	let confirmModalData = {
+		title: '',
+		message: '',
+		confirmText: 'Conferma',
+		cancelText: 'Annulla',
+		onConfirm: null,
+		onCancel: null,
+		type: 'danger' // 'danger', 'warning', 'info'
+	};
+	let errorModalData = {
+		title: 'Errore',
+		message: '',
+		buttonText: 'OK'
+	};
+
 	// Form data
 	let formData = {
 		name: '',
@@ -137,9 +155,12 @@
 	}
 
 	async function handleDeleteCategory(id) {
-		if (confirm('Sei sicuro? Questa azione eliminerà anche tutti i prodotti della categoria.')) {
-			await deleteCategory(id);
-		}
+		showConfirm(
+			'Elimina Categoria',
+			'Sei sicuro? Questa azione eliminerà anche tutti i prodotti della categoria.',
+			() => deleteCategory(id),
+			{ type: 'danger', confirmText: 'Elimina' }
+		);
 	}
 
 	async function handleAddSubcategory(categoryId) {
@@ -150,9 +171,12 @@
 	}
 
 	async function handleRemoveSubcategory(categoryId, subcategoryName) {
-		if (confirm(`Rimuovere "${subcategoryName}"?`)) {
-			await removeSubcategory(categoryId, subcategoryName);
-		}
+		showConfirm(
+			'Rimuovi Sottocategoria',
+			`Rimuovere "${subcategoryName}"?`,
+			() => removeSubcategory(categoryId, subcategoryName),
+			{ type: 'warning', confirmText: 'Rimuovi' }
+		);
 	}
 
 	function openEditModal(item) {
@@ -190,9 +214,12 @@
 	}
 
 	async function handleDelete(id) {
-		if (confirm('Sei sicuro di voler eliminare questo prodotto?')) {
-			await deleteMenuItem(id);
-		}
+		showConfirm(
+			'Elimina Prodotto',
+			'Sei sicuro di voler eliminare questo prodotto?',
+			() => deleteMenuItem(id),
+			{ type: 'danger', confirmText: 'Elimina' }
+		);
 	}
 
 	async function handleImageUpload(e) {
@@ -287,17 +314,22 @@
 	}
 
 	async function handleDeleteGalleryImage(image) {
-		if (!confirm('Eliminare questa immagine dalla gallery?')) return;
-
-		try {
-			// Delete from storage
-			await deleteGalleryImage(image.immagine_url);
-			// Delete from database
-			await deleteGalleryImageFromDb(image.id);
-		} catch (error) {
-			console.error('Delete error:', error);
-			alert('Errore durante l\'eliminazione');
-		}
+		showConfirm(
+			'Elimina Immagine',
+			'Eliminare questa immagine dalla gallery?',
+			async () => {
+				try {
+					// Delete from storage
+					await deleteGalleryImage(image.immagine_url);
+					// Delete from database
+					await deleteGalleryImageFromDb(image.id);
+				} catch (error) {
+					console.error('Delete error:', error);
+					showError('Errore durante l\'eliminazione dell\'immagine');
+				}
+			},
+			{ type: 'danger', confirmText: 'Elimina' }
+		);
 	}
 
 	function openAltTextModal(image) {
@@ -351,6 +383,35 @@
 		
 		draggedItem = null;
 		dragOverItem = null;
+	}
+
+	// Modal System Functions
+	function showConfirm(title, message, onConfirm, options = {}) {
+		confirmModalData = {
+			title,
+			message,
+			confirmText: options.confirmText || 'Conferma',
+			cancelText: options.cancelText || 'Annulla',
+			type: options.type || 'danger',
+			onConfirm: () => {
+				showConfirmModal = false;
+				if (onConfirm) onConfirm();
+			},
+			onCancel: () => {
+				showConfirmModal = false;
+				if (options.onCancel) options.onCancel();
+			}
+		};
+		showConfirmModal = true;
+	}
+
+	function showError(message, title = 'Errore') {
+		errorModalData = {
+			title,
+			message,
+			buttonText: 'OK'
+		};
+		showErrorModal = true;
 	}
 
 	// Inizializza gli store quando l'utente è autenticato
@@ -730,10 +791,13 @@
 								}}>
 									<Edit size={16} />
 								</button>
-								<button class="btn-sm-icon btn-delete" on:click={async () => {
-									if (confirm('Eliminare questo evento?')) {
-										await deleteEvento(evento.id);
-									}
+								<button class="btn-sm-icon btn-delete" on:click={() => {
+									showConfirm(
+										'Elimina Evento',
+										'Eliminare questo evento?',
+										() => deleteEvento(evento.id),
+										{ type: 'danger', confirmText: 'Elimina' }
+									);
 								}}>
 									<Trash2 size={16} />
 								</button>
@@ -874,7 +938,7 @@
 						</button>
 						<button class="btn-save-modern" on:click={async () => {
 							if (!eventoFormData.titolo || !eventoFormData.descrizione || !eventoFormData.data_inizio || !eventoFormData.data_fine) {
-								alert('Compila tutti i campi obbligatori');
+								showError('Compila tutti i campi obbligatori', 'Campi Mancanti');
 								return;
 							}
 
@@ -1275,6 +1339,59 @@
 					<X size={32} />
 				</button>
 				<img src={zoomedImage} alt="Preview" class="zoomed-image" on:click|stopPropagation />
+			</div>
+		{/if}
+
+		<!-- Confirm Modal -->
+		{#if showConfirmModal}
+			<div class="modal-overlay" on:click={confirmModalData.onCancel}>
+				<div class="modal-confirm" class:danger={confirmModalData.type === 'danger'} class:warning={confirmModalData.type === 'warning'} on:click|stopPropagation>
+					<div class="modal-confirm-header">
+						<div class="modal-confirm-icon">
+							{#if confirmModalData.type === 'danger'}
+								<Trash2 size={32} />
+							{:else if confirmModalData.type === 'warning'}
+								<X size={32} />
+							{:else}
+								<Check size={32} />
+							{/if}
+						</div>
+						<h3>{confirmModalData.title}</h3>
+					</div>
+					<div class="modal-confirm-body">
+						<p>{confirmModalData.message}</p>
+					</div>
+					<div class="modal-confirm-footer">
+						<button class="btn-confirm-cancel" on:click={confirmModalData.onCancel}>
+							{confirmModalData.cancelText}
+						</button>
+						<button class="btn-confirm-action" class:danger={confirmModalData.type === 'danger'} class:warning={confirmModalData.type === 'warning'} on:click={confirmModalData.onConfirm}>
+							{confirmModalData.confirmText}
+						</button>
+					</div>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Error Modal -->
+		{#if showErrorModal}
+			<div class="modal-overlay" on:click={() => showErrorModal = false}>
+				<div class="modal-error" on:click|stopPropagation>
+					<div class="modal-error-header">
+						<div class="modal-error-icon">
+							<X size={32} />
+						</div>
+						<h3>{errorModalData.title}</h3>
+					</div>
+					<div class="modal-error-body">
+						<p>{errorModalData.message}</p>
+					</div>
+					<div class="modal-error-footer">
+						<button class="btn-error-ok" on:click={() => showErrorModal = false}>
+							{errorModalData.buttonText}
+						</button>
+					</div>
+				</div>
 			</div>
 		{/if}
 	</div>
@@ -2787,6 +2904,199 @@
 		margin-top: 1rem;
 		padding-top: 1rem;
 		border-top: 2px dashed var(--grigio);
+	}
+
+	/* Confirm Modal */
+	.modal-confirm {
+		background: var(--bianco);
+		border-radius: 20px;
+		width: 100%;
+		max-width: 450px;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+		animation: slideUp 0.3s ease;
+		border: 3px solid var(--grigio);
+	}
+
+	.modal-confirm.danger {
+		border-color: #dc3545;
+	}
+
+	.modal-confirm.warning {
+		border-color: #ffc107;
+	}
+
+	.modal-confirm-header {
+		padding: 2rem 2rem 1rem 2rem;
+		text-align: center;
+	}
+
+	.modal-confirm-icon {
+		width: 80px;
+		height: 80px;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin: 0 auto 1rem auto;
+		background: var(--grigio-chiaro);
+		color: var(--grigio-scuro);
+	}
+
+	.modal-confirm.danger .modal-confirm-icon {
+		background: rgba(220, 53, 69, 0.1);
+		color: #dc3545;
+	}
+
+	.modal-confirm.warning .modal-confirm-icon {
+		background: rgba(255, 193, 7, 0.1);
+		color: #ffc107;
+	}
+
+	.modal-confirm-header h3 {
+		color: var(--nero);
+		font-size: 1.5rem;
+		margin: 0;
+		font-weight: 700;
+	}
+
+	.modal-confirm-body {
+		padding: 0 2rem 1.5rem 2rem;
+		text-align: center;
+	}
+
+	.modal-confirm-body p {
+		color: var(--grigio-scuro);
+		font-size: 1rem;
+		line-height: 1.5;
+		margin: 0;
+	}
+
+	.modal-confirm-footer {
+		padding: 1.5rem 2rem 2rem 2rem;
+		display: flex;
+		gap: 1rem;
+		justify-content: center;
+	}
+
+	.btn-confirm-cancel {
+		flex: 1;
+		padding: 1rem 2rem;
+		background: var(--grigio);
+		color: var(--nero);
+		border: none;
+		border-radius: 12px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		font-size: 1rem;
+	}
+
+	.btn-confirm-cancel:hover {
+		background: var(--grigio-scuro);
+		color: var(--bianco);
+	}
+
+	.btn-confirm-action {
+		flex: 1;
+		padding: 1rem 2rem;
+		background: var(--verde-meraki);
+		color: var(--bianco);
+		border: none;
+		border-radius: 12px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		font-size: 1rem;
+	}
+
+	.btn-confirm-action.danger {
+		background: #dc3545;
+	}
+
+	.btn-confirm-action.danger:hover {
+		background: #c82333;
+	}
+
+	.btn-confirm-action.warning {
+		background: #ffc107;
+		color: #000;
+	}
+
+	.btn-confirm-action.warning:hover {
+		background: #e0a800;
+	}
+
+	.btn-confirm-action:hover:not(.danger):not(.warning) {
+		background: var(--verde-light);
+	}
+
+	/* Error Modal */
+	.modal-error {
+		background: var(--bianco);
+		border-radius: 20px;
+		width: 100%;
+		max-width: 400px;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+		animation: slideUp 0.3s ease;
+		border: 3px solid #dc3545;
+	}
+
+	.modal-error-header {
+		padding: 2rem 2rem 1rem 2rem;
+		text-align: center;
+	}
+
+	.modal-error-icon {
+		width: 80px;
+		height: 80px;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin: 0 auto 1rem auto;
+		background: rgba(220, 53, 69, 0.1);
+		color: #dc3545;
+	}
+
+	.modal-error-header h3 {
+		color: var(--nero);
+		font-size: 1.5rem;
+		margin: 0;
+		font-weight: 700;
+	}
+
+	.modal-error-body {
+		padding: 0 2rem 1.5rem 2rem;
+		text-align: center;
+	}
+
+	.modal-error-body p {
+		color: var(--grigio-scuro);
+		font-size: 1rem;
+		line-height: 1.5;
+		margin: 0;
+	}
+
+	.modal-error-footer {
+		padding: 1.5rem 2rem 2rem 2rem;
+		display: flex;
+		justify-content: center;
+	}
+
+	.btn-error-ok {
+		padding: 1rem 3rem;
+		background: #dc3545;
+		color: var(--bianco);
+		border: none;
+		border-radius: 12px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		font-size: 1rem;
+	}
+
+	.btn-error-ok:hover {
+		background: #c82333;
 	}
 
 	/* Responsive */
