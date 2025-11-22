@@ -2,8 +2,8 @@
 	import { isAuthenticated, login, authLoading } from '$lib/stores/authStore.js';
 	import { menuStore, updateMenuItem, addMenuItem, deleteMenuItem } from '$lib/stores/menuStore.js';
 	import { categoriesStore, addCategory, updateCategory, deleteCategory, addSubcategory, removeSubcategory } from '$lib/stores/categoriesStore.js';
-	import { eventiStore, loadEventi, addEvento, updateEvento, deleteEvento, isEventoAttivo } from '$lib/stores/eventiStore.js';
-	import { galleryStore, loadGallery, addGalleryImage, deleteGalleryImage as deleteGalleryImageFromDb, updateGalleryOrder, updateGalleryAltText } from '$lib/stores/galleryStore.js';
+	import { eventiStore, loadEventi, addEvento, updateEvento, deleteEvento, isEventoAttivo, eventiLoading } from '$lib/stores/eventiStore.js';
+	import { galleryStore, loadGallery, addGalleryImage, deleteGalleryImage as deleteGalleryImageFromDb, updateGalleryOrder, updateGalleryAltText, galleryLoading } from '$lib/stores/galleryStore.js';
 	import { uploadMenuImage, deleteMenuImage, uploadGalleryImage, deleteGalleryImage } from '$lib/utils/imageUpload.js';
 	import { Lock, Package, Tag, Eye, Camera, Plus, Search, X, Edit, Trash2, Check, FileText, DollarSign, ArrowLeft, MousePointerClick, Home, Calendar, Clock, Image as ImageIcon, GripVertical } from 'lucide-svelte';
 
@@ -109,6 +109,12 @@
 		if (!result.success) {
 			error = result.error || 'Errore di login';
 			password = '';
+		} else {
+			// Carica i dati degli store appena l'utente si autentica
+			await Promise.all([
+				loadEventi(),
+				loadGallery()
+			]);
 		}
 	}
 
@@ -495,7 +501,7 @@
 						<h3>Gestisci Eventi</h3>
 						<p>Crea e gestisci eventi con badge NEWS</p>
 						<div class="nav-stats">
-							<span>{$eventiStore.length} eventi</span>
+							<span>{$eventiLoading ? 'Caricamento...' : `${$eventiStore.length} eventi`}</span>
 						</div>
 					</div>
 					<div class="nav-card" on:click={async () => { 
@@ -508,7 +514,7 @@
 						<h3>Gestisci Gallery</h3>
 						<p>Carica e organizza le immagini della gallery</p>
 						<div class="nav-stats">
-							<span>{$galleryStore.length} immagini</span>
+							<span>{$galleryLoading ? 'Caricamento...' : `${$galleryStore.length} immagini`}</span>
 						</div>
 					</div>
 				</div>
