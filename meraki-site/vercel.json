@@ -1,29 +1,10 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "build",
   "framework": "sveltekit",
+  "buildCommand": "npm run build",
   "installCommand": "npm install",
-  "devCommand": "npm run dev -- --port $PORT",
   "functions": {
     "src/routes/**/*.js": {
       "maxDuration": 30
     }
-  },
-  "headers": [
-    {
-      "source": "/_app/immutable/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/"
-    }
-  ]
+  }
 }
