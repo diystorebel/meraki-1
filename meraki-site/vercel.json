@@ -11,20 +11,11 @@
   },
   "headers": [
     {
-      "source": "/static/(.*)",
+      "source": "/_app/immutable/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
-      "source": "/(.*\\.(jpg|jpeg|png|webp|avif|gif|svg|ico))$",
-      "headers": [
-        {
-          "key": "Cache-Control", 
-          "value": "public, max-age=86400"
         }
       ]
     }
