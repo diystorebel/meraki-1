@@ -409,8 +409,8 @@
 		min-height: 100vh;
 		background: var(--bianco);
 		width: 100%;
-		max-width: 100%;
-		overflow-x: clip;
+		max-width: 100vw;
+		overflow-x: hidden;
 	}
 
 	/* Header - Mobile First */
@@ -491,7 +491,7 @@
 		color: var(--bianco);
 		padding: 1rem 1rem;
 		text-align: center;
-		font-size: 0.85rem;
+		font-size: 0.95rem;
 		line-height: 1.5;
 		width: 100%;
 	}
@@ -499,7 +499,7 @@
 	@media (min-width: 768px) {
 		.aperitivo-banner {
 			padding: 1.5rem 2rem;
-			font-size: 0.95rem;
+			font-size: 1.05rem;
 			line-height: 1.6;
 		}
 	}
@@ -510,7 +510,8 @@
 		padding: 1.5rem 0;
 		border-bottom: 2px solid var(--grigio);
 		width: 100%;
-		overflow: hidden;
+		overflow-x: hidden;
+		max-width: 100vw;
 	}
 
 	@media (min-width: 768px) {
@@ -525,6 +526,7 @@
 		padding: 0 0.75rem;
 		width: 100%;
 		box-sizing: border-box;
+		overflow-x: hidden;
 	}
 
 	@media (min-width: 768px) {
@@ -542,8 +544,11 @@
 		border: 1.5px solid var(--verde-meraki);
 		border-radius: 20px;
 		padding: 0 0.8rem;
-		height: 38px;
+		height: 42px;
 		width: 100%;
+		max-width: 100%;
+		box-sizing: border-box;
+		min-width: 0;
 	}
 
 	.search-expanded :global(.search-icon-static) {
@@ -555,9 +560,11 @@
 		flex: 1;
 		border: none;
 		background: transparent;
-		font-size: 0.9rem;
+		font-size: 1rem;
 		outline: none;
 		padding: 0;
+		min-width: 0;
+		width: 100%;
 	}
 
 	.search-close-btn {
@@ -634,8 +641,8 @@
 
 	/* Search Button (chip) */
 	.search-btn {
-		width: 38px;
-		height: 38px;
+		width: 42px;
+		height: 42px;
 		border: 1.5px solid var(--verde-meraki);
 		background: var(--bianco);
 		color: var(--verde-meraki);
@@ -654,13 +661,13 @@
 	}
 
 	.cat-btn {
-		padding: 0.5rem 1rem;
+		padding: 0.6rem 1.2rem;
 		border: 1.5px solid var(--verde-meraki);
 		background: var(--bianco);
 		color: var(--verde-meraki);
 		border-radius: 20px;
 		font-weight: 600;
-		font-size: 0.85rem;
+		font-size: 1rem;
 		cursor: pointer;
 		transition: all 0.2s;
 		white-space: nowrap;
@@ -708,13 +715,13 @@
 	}
 
 	.subcat-btn {
-		padding: 0.3rem 0.7rem;
+		padding: 0.4rem 0.9rem;
 		border: 1px solid var(--verde-light);
 		background: transparent;
 		color: var(--verde-meraki);
 		border-radius: 15px;
 		font-weight: 500;
-		font-size: 0.75rem;
+		font-size: 0.95rem;
 		cursor: pointer;
 		transition: all 0.2s;
 	}
@@ -915,12 +922,12 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		padding: 0.3rem 0.8rem;
+		padding: 0.4rem 1rem;
 		background: transparent;
 		color: var(--verde-meraki);
 		border: 2px solid var(--verde-meraki);
 		border-radius: 20px;
-		font-size: 0.75rem;
+		font-size: 0.85rem;
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
@@ -940,7 +947,7 @@
 	}
 
 	.item-name {
-		font-size: 1.2rem;
+		font-size: 1.4rem;
 		font-weight: 700;
 		color: var(--nero);
 		margin-bottom: 0.5rem;
@@ -953,19 +960,19 @@
 
 	@media (min-width: 768px) {
 		.item-name {
-			font-size: 1.4rem;
+			font-size: 1.6rem;
 		}
 	}
 
 	.item-description {
-		font-size: 0.85rem;
+		font-size: 1rem;
 		color: var(--grigio-scuro);
 		line-height: 1.5;
 	}
 
 	@media (min-width: 768px) {
 		.item-description {
-			font-size: 0.9rem;
+			font-size: 1.1rem;
 		}
 	}
 
@@ -977,7 +984,7 @@
 	}
 
 	.item-price {
-		font-size: 1.3rem;
+		font-size: 1.5rem;
 		font-weight: 700;
 		color: var(--verde-meraki);
 		text-align: right;
@@ -985,7 +992,7 @@
 
 	@media (min-width: 768px) {
 		.item-price {
-			font-size: 1.5rem;
+			font-size: 1.7rem;
 		}
 	}
 
@@ -1003,24 +1010,24 @@
 	}
 
 	.size-name {
-		font-size: 0.8rem;
+		font-size: 0.95rem;
 		color: var(--grigio-scuro);
 		font-weight: 500;
 	}
 
 	.size-price {
-		font-size: 1rem;
+		font-size: 1.15rem;
 		font-weight: 700;
 		color: var(--verde-meraki);
 	}
 
 	@media (min-width: 768px) {
 		.size-name {
-			font-size: 0.85rem;
+			font-size: 1.05rem;
 		}
 
 		.size-price {
-			font-size: 1.1rem;
+			font-size: 1.3rem;
 		}
 	}
 
@@ -1029,7 +1036,7 @@
 		padding: 0.8rem;
 		background: var(--grigio-chiaro);
 		border-left: 3px solid var(--verde-meraki);
-		font-size: 0.85rem;
+		font-size: 1rem;
 		color: var(--grigio-scuro);
 		border-radius: 4px;
 	}
