@@ -113,6 +113,15 @@
 			searchTerm = '';
 		}
 	}
+
+	// Blocca scroll quando modal aperto
+	$: if (typeof document !== 'undefined') {
+		if (selectedProduct) {
+			document.body.style.overflow = 'hidden';
+		} else {
+			document.body.style.overflow = '';
+		}
+	}
 </script>
 
 <svelte:head>
@@ -388,17 +397,12 @@
 
 				<!-- Content -->
 				<div class="modal-body">
-					<div class="modal-header">
-						<h2>{selectedProduct.name}</h2>
-						{#if selectedProduct.description}
-							<p class="ingredients">{selectedProduct.description}</p>
-						{/if}
-					</div>
-
+					<h2>{selectedProduct.name}</h2>
+					{#if selectedProduct.description}
+						<p class="ingredients">{selectedProduct.description}</p>
+					{/if}
 					{#if selectedProduct.detailed_description}
-						<div class="description-block">
-							<p>{selectedProduct.detailed_description}</p>
-						</div>
+						<p class="detailed-desc">{selectedProduct.detailed_description}</p>
 					{/if}
 				</div>
 			</div>
@@ -896,11 +900,23 @@
 	}
 
 	.premium-footer .click-badge {
-		background: var(--bianco);
-		color: var(--verde-meraki);
-		border: none;
+		background: transparent;
+		color: var(--bianco);
+		border: 2px solid var(--bianco);
 		font-weight: 800;
 		flex-shrink: 0;
+		animation: clickPulseWhite 1.5s ease-in-out infinite;
+	}
+
+	@keyframes clickPulseWhite {
+		0%, 100% { 
+			transform: scale(1);
+			border-color: var(--bianco);
+		}
+		50% { 
+			transform: scale(1.05);
+			border-color: rgba(255, 255, 255, 0.7);
+		}
 	}
 
 	.premium-footer .item-price {
@@ -1145,52 +1161,32 @@
 	/* Hero section con immagine */
 	.modal-hero {
 		position: relative;
-		height: 200px;
+		height: 280px;
 		overflow: hidden;
-		background: linear-gradient(135deg, #1a3a1a 0%, #2d5a2d 100%);
+		background: #fafaf8;
 	}
 
 	.hero-img {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
-		animation: heroZoom 0.6s ease-out;
-	}
-
-	@keyframes heroZoom {
-		from {
-			transform: scale(1.1);
-			opacity: 0;
-		}
-		to {
-			transform: scale(1);
-			opacity: 1;
-		}
+		border-radius: 24px 24px 0 0;
 	}
 
 	.hero-gradient {
 		position: absolute;
-		inset: 0;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		height: 80px;
 		background: linear-gradient(
 			to bottom,
-			transparent 0%,
-			transparent 50%,
-			rgba(250, 250, 248, 0.6) 75%,
-			rgba(250, 250, 248, 0.9) 90%,
+			rgba(250, 250, 248, 0) 0%,
+			rgba(250, 250, 248, 0.4) 40%,
+			rgba(250, 250, 248, 0.85) 70%,
 			#fafaf8 100%
 		);
 		pointer-events: none;
-	}
-
-	/* Rimuove qualsiasi linea di stacco */
-	.modal-hero::after {
-		content: '';
-		position: absolute;
-		bottom: -1px;
-		left: 0;
-		right: 0;
-		height: 20px;
-		background: linear-gradient(to bottom, transparent, #fafaf8);
 	}
 
 	/* Close button - minimal */
@@ -1225,42 +1221,31 @@
 		max-height: calc(85vh - 200px);
 	}
 
-	.modal-header {
-		margin-bottom: 16px;
+	.modal-body h2 {
+		font-family: 'Bebas Neue', sans-serif;
+		font-size: 2.4rem;
+		font-weight: 400;
+		color: var(--verde-meraki);
+		margin: 0 0 20px;
+		line-height: 1.15;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
 	}
 
-	.modal-header h2 {
-		font-family: 'Playfair Display', Georgia, serif;
-		font-size: 1.5rem;
-		font-weight: 600;
-		color: #1a1a1a;
-		margin: 0 0 8px;
-		line-height: 1.3;
-		text-transform: capitalize;
+	.modal-body .ingredients {
+		font-size: 1.05rem;
+		color: var(--grigio-scuro);
+		line-height: 1.6;
+		margin: 0 0 24px;
 	}
 
-	.ingredients {
-		font-size: 0.85rem;
-		color: #666;
-		line-height: 1.5;
+	.modal-body .detailed-desc {
+		font-size: 1rem;
+		line-height: 1.7;
+		color: #555;
 		margin: 0;
-		font-style: italic;
-	}
-
-	/* Description block */
-	.description-block {
-		background: #fff;
-		border-radius: 12px;
-		padding: 16px;
-		margin-bottom: 16px;
-		border: 1px solid rgba(0, 0, 0, 0.06);
-	}
-
-	.description-block p {
-		font-size: 0.9rem;
-		line-height: 1.65;
-		color: #444;
-		margin: 0;
+		padding-top: 20px;
+		border-top: 1px solid var(--grigio);
 	}
 
 	/* Mobile adjustments */
@@ -1272,21 +1257,21 @@
 
 		.modal-detail {
 			max-width: 100%;
-			max-height: 85vh;
+			max-height: 90vh;
 			border-radius: 20px;
 		}
 
 		.modal-hero {
-			height: 180px;
+			height: 300px;
 		}
 
 		.modal-body {
-			padding: 16px 20px 24px;
-			max-height: calc(85vh - 180px);
+			padding: 20px 24px 28px;
+			max-height: calc(90vh - 300px);
 		}
 
-		.modal-header h2 {
-			font-size: 1.35rem;
+		.modal-body h2 {
+			font-size: 1.9rem;
 		}
 	}
 
