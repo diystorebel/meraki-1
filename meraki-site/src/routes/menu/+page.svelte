@@ -1166,6 +1166,20 @@
 		background: #fafaf8;
 	}
 
+	.modal-hero::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: radial-gradient(
+			ellipse 120% 100% at center 30%,
+			transparent 30%,
+			rgba(0, 0, 0, 0.6) 100%
+		);
+		z-index: 1;
+		pointer-events: none;
+		border-radius: 24px 24px 0 0;
+	}
+
 	.hero-img {
 		width: 100%;
 		height: 100%;
@@ -1187,6 +1201,7 @@
 			#fafaf8 100%
 		);
 		pointer-events: none;
+		z-index: 2;
 	}
 
 	/* Close button - minimal */
