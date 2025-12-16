@@ -20,8 +20,8 @@ export async function uploadMenuImage(file, fileName) {
 		// Compress image
 		const compressedFile = await imageCompression(file, options);
 		
-		// Generate WebP filename
-		const webpFileName = fileName.replace(/\.(jpg|jpeg|png)$/i, '.webp');
+		// Generate WebP filename (supports jpg, png, heic/heif iPhone, gif, avif, bmp, tiff)
+		const webpFileName = fileName.replace(/\.(jpg|jpeg|png|heic|heif|gif|avif|bmp|tiff|tif|webp)$/i, '.webp');
 		const filePath = `${webpFileName}`;
 
 		// Upload to Supabase Storage (upsert = true to overwrite)
@@ -96,8 +96,8 @@ export async function uploadGalleryImage(file, fileName) {
 		// Compress image
 		const compressedFile = await imageCompression(file, options);
 		
-		// Generate WebP filename
-		const webpFileName = fileName.replace(/\.(jpg|jpeg|png)$/i, '.webp');
+		// Generate WebP filename (supports jpg, png, heic/heif iPhone, gif, avif, bmp, tiff)
+		const webpFileName = fileName.replace(/\.(jpg|jpeg|png|heic|heif|gif|avif|bmp|tiff|tif|webp)$/i, '.webp');
 		const filePath = `${webpFileName}`;
 
 		// Upload to Supabase Storage gallery bucket

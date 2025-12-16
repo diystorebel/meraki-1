@@ -2,22 +2,22 @@
 	import { onMount } from 'svelte';
 	import { categoriesStore, getSubcategoriesForCategory } from '$lib/stores/categoriesStore.js';
 	import { menuStore } from '$lib/stores/menuStore.js';
-	import { loadEventiAttivi } from '$lib/stores/eventiStore.js';
+	import { loadEventiVisibili, getStatoEvento, getBadgeText } from '$lib/stores/eventiStore.js';
 	import { smartSearch } from '$lib/utils/smartSearch.js';
 	import { fade, fly } from 'svelte/transition';
 	import { X, Search, MousePointerClick, Home, Calendar, Clock, Sparkles, Phone } from 'lucide-svelte';
 
-	let eventiAttivi = [];
+	let eventiVisibili = [];
 	let showEventiPopup = false;
 	let zoomedImage = null;
 
 	onMount(async () => {
-		// Carica eventi attivi
-		eventiAttivi = await loadEventiAttivi();
+		// Carica eventi visibili (in corso + in arrivo)
+		eventiVisibili = await loadEventiVisibili();
 		
 		// Mostra popup solo al primo accesso (sessione)
 		const hasSeenEventiPopup = sessionStorage.getItem('hasSeenEventiPopup');
-		if (!hasSeenEventiPopup && eventiAttivi.length > 0) {
+		if (!hasSeenEventiPopup && eventiVisibili.length > 0) {
 			showEventiPopup = true;
 			sessionStorage.setItem('hasSeenEventiPopup', 'true');
 		}
@@ -129,8 +129,8 @@
 </svelte:head>
 
 <div class="menu-page">
-	<!-- Popup Eventi Attivi -->
-	{#if showEventiPopup && eventiAttivi.length > 0}
+	<!-- Popup Eventi -->
+	{#if showEventiPopup && eventiVisibili.length > 0}
 		<div class="eventi-popup-overlay" transition:fade on:click={() => showEventiPopup = false}>
 			<div class="eventi-popup" on:click|stopPropagation transition:fade={{ delay: 200 }}>
 				<button class="popup-close" on:click={() => showEventiPopup = false}>
@@ -138,42 +138,29 @@
 				</button>
 				
 				<div class="popup-header">
-					<div class="news-badge-popup">NEWS</div>
-					<h2>
-						<Sparkles size={28} class="inline-icon-title" />
-						Eventi in Corso
-					</h2>
-					<p>Non perdere i nostri eventi speciali!</p>
+					<h2>🎉 Eventi</h2>
+					<p>Non perdere i nostri appuntamenti!</p>
 				</div>
 
 				<div class="popup-eventi-list">
-					{#each eventiAttivi as evento}
+					{#each eventiVisibili as evento}
+						{@const badgeText = getBadgeText(evento)}
+						{@const stato = getStatoEvento(evento)}
+						{@const dataShort = new Date(evento.data_inizio).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
 						<div class="popup-evento-card">
 							{#if evento.immagine_url}
 								<div class="popup-evento-image" on:click={() => zoomedImage = evento.immagine_url} role="button" tabindex="0" on:keypress={(e) => e.key === 'Enter' && (zoomedImage = evento.immagine_url)}>
 									<img src={evento.immagine_url} alt={evento.titolo} />
-									<div class="zoom-hint-popup">
-										<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-											<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-											<line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
-										</svg>
-									</div>
 								</div>
 							{/if}
 							<div class="popup-evento-content">
-								<h3>{evento.titolo}</h3>
-								<div class="popup-evento-meta">
-									<div class="meta-row">
-										<Calendar size={16} />
-										<span>{formatData(evento.data_inizio)}</span>
-									</div>
-									{#if evento.orario}
-										<div class="meta-row">
-											<Clock size={16} />
-											<span>{evento.orario}</span>
-										</div>
+								<div class="popup-evento-header">
+									{#if badgeText}
+										<span class="popup-badge" class:in-corso={stato === 'in_corso'} class:in-arrivo={stato === 'in_arrivo'}>{badgeText}</span>
 									{/if}
+									<span class="popup-data">{dataShort}{#if evento.orario} · {evento.orario}{/if}</span>
 								</div>
+								<h3>{evento.titolo}</h3>
 								<p>{evento.descrizione}</p>
 							</div>
 						</div>
@@ -181,12 +168,11 @@
 				</div>
 
 				<div class="popup-footer">
-					<a href="tel:+393516327144" class="btn-prenota">
-						<Phone size={20} />
-						Prenota Ora
+					<a href="/eventi" class="btn-prenota">
+						Visualizza Eventi
 					</a>
 					<button class="btn-chiudi" on:click={() => showEventiPopup = false}>
-						Continua al Menu
+						Vai al Menu
 					</button>
 				</div>
 			</div>
@@ -1433,77 +1419,73 @@
 
 	.popup-header {
 		text-align: center;
-		padding: 1.5rem 1.5rem 1rem;
-		background: linear-gradient(135deg, var(--verde-meraki) 0%, var(--verde-light) 100%);
+		padding: 1.5rem 1.5rem 1.2rem;
+		background: var(--verde-meraki);
 		color: var(--bianco);
 		border-radius: 24px 24px 0 0;
 		position: relative;
 	}
 
-	.news-badge-popup {
+	/* Badge inline nel popup */
+	.popup-badge {
 		display: inline-block;
-		padding: 0.4rem 0.8rem;
-		background: #FF4444;
+		padding: 0.3rem 0.6rem;
 		color: white;
-		font-weight: 800;
-		font-size: 0.8rem;
-		letter-spacing: 0.1em;
-		border-radius: 6px;
-		margin-bottom: 0.8rem;
-		animation: pulse 2s ease-in-out infinite;
+		font-weight: 700;
+		font-size: 0.65rem;
+		letter-spacing: 0.08em;
+		border-radius: 5px;
+		text-transform: uppercase;
+	}
+
+	.popup-badge.in-corso {
+		background: #166534;
+	}
+
+	.popup-badge.in-arrivo {
+		background: #ea580c;
 	}
 
 	.popup-header h2 {
-		font-size: 1.6rem;
-		margin: 0.5rem 0 0.5rem;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.6rem;
-	}
-
-	.inline-icon-title {
-		display: inline-flex;
-		vertical-align: middle;
+		font-size: 1.5rem;
+		font-weight: 700;
+		margin: 0 0 0.4rem 0;
 	}
 
 	.popup-header p {
-		font-size: 0.95rem;
-		opacity: 0.95;
+		font-size: 0.9rem;
+		opacity: 0.9;
 		margin: 0;
+		font-weight: 400;
 	}
 
 	.popup-eventi-list {
 		padding: 1rem;
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
-		max-height: 400px;
+		gap: 0.8rem;
+		max-height: 50vh;
 		overflow-y: auto;
 	}
 
 	.popup-evento-card {
-		border: 2px solid var(--grigio);
+		background: var(--grigio-chiaro);
 		border-radius: 16px;
 		overflow: hidden;
 		transition: all 0.3s ease;
+		display: flex;
+		flex-direction: column;
 	}
 
 	.popup-evento-card:hover {
-		border-color: var(--verde-meraki);
-		box-shadow: 0 4px 12px rgba(21, 67, 21, 0.15);
+		background: #f0f0f0;
 	}
 
 	.popup-evento-image {
 		width: 100%;
-		height: 160px;
+		height: 140px;
 		overflow: hidden;
-		position: relative;
 		cursor: zoom-in;
-	}
-
-	.popup-evento-image:hover img {
-		transform: scale(1.05);
 	}
 
 	.popup-evento-image img {
@@ -1513,103 +1495,88 @@
 		transition: transform 0.3s ease;
 	}
 
-	.zoom-hint-popup {
-		position: absolute;
-		bottom: 0.8rem;
-		right: 0.8rem;
-		width: 36px;
-		height: 36px;
-		background: rgba(21, 67, 21, 0.9);
-		color: white;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		opacity: 0;
-		transition: opacity 0.3s ease;
-		pointer-events: none;
-		z-index: 2;
-	}
-
-	.popup-evento-image:hover .zoom-hint-popup {
-		opacity: 1;
+	.popup-evento-image:hover img {
+		transform: scale(1.05);
 	}
 
 	.popup-evento-content {
-		padding: 1rem;
+		padding: 1rem 1.2rem 1.2rem;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.popup-evento-header {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		margin-bottom: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.popup-data {
+		font-size: 0.8rem;
+		color: var(--grigio-scuro);
+		font-weight: 500;
 	}
 
 	.popup-evento-content h3 {
 		color: var(--verde-meraki);
-		font-size: 1.3rem;
-		margin-bottom: 0.8rem;
-	}
-
-	.popup-evento-meta {
-		display: flex;
-		flex-direction: column;
-		gap: 0.4rem;
-		margin-bottom: 0.8rem;
-	}
-
-	.meta-row {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		color: var(--grigio-scuro);
-		font-size: 0.95rem;
+		font-size: 1.2rem;
+		font-weight: 700;
+		margin: 0 0 0.5rem 0;
+		line-height: 1.25;
 	}
 
 	.popup-evento-content p {
-		color: var(--nero);
-		line-height: 1.6;
+		color: #555;
+		font-size: 0.9rem;
+		line-height: 1.5;
+		margin: 0;
 	}
 
 	.popup-footer {
-		padding: 1rem;
+		padding: 1.2rem;
 		display: flex;
-		flex-direction: column;
 		gap: 0.8rem;
-		border-top: 2px solid var(--grigio);
+		border-top: 1px solid var(--grigio);
 	}
 
 	.btn-prenota {
-		padding: 0.9rem 1.5rem;
+		flex: 1;
+		padding: 0.9rem 1rem;
 		background: var(--verde-meraki);
 		color: var(--bianco);
 		text-decoration: none;
 		text-align: center;
-		border-radius: 50px;
-		font-weight: 700;
-		font-size: 1rem;
+		border-radius: 12px;
+		font-weight: 600;
+		font-size: 0.95rem;
 		transition: all 0.3s ease;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		gap: 0.5rem;
 	}
 
 	.btn-prenota:hover {
 		background: var(--verde-light);
-		transform: translateY(-2px);
-		box-shadow: 0 8px 20px rgba(21, 67, 21, 0.3);
 	}
 
 	.btn-chiudi {
-		padding: 0.8rem 2rem;
-		background: transparent;
+		flex: 1;
+		padding: 0.9rem 1rem;
+		background: var(--grigio-chiaro);
 		color: var(--grigio-scuro);
-		border: 2px solid var(--grigio);
-		border-radius: 50px;
+		border: none;
+		border-radius: 12px;
 		font-weight: 600;
+		font-size: 0.95rem;
 		cursor: pointer;
 		transition: all 0.3s ease;
 	}
 
 	.btn-chiudi:hover {
-		background: var(--grigio-chiaro);
-		border-color: var(--verde-meraki);
-		color: var(--verde-meraki);
+		background: var(--grigio);
+		color: var(--nero);
 	}
 
 	/* Image Zoom Modal */
@@ -1677,12 +1644,13 @@
 
 	@media (max-width: 640px) {
 		.eventi-popup {
-			margin: 0.5rem;
+			margin: 0.8rem;
 			border-radius: 20px;
+			max-height: 90vh;
 		}
 
 		.popup-header {
-			padding: 1.2rem 1rem 0.8rem;
+			padding: 1.3rem 1.2rem 1rem;
 			border-radius: 20px 20px 0 0;
 		}
 
@@ -1691,28 +1659,36 @@
 		}
 
 		.popup-header p {
-			font-size: 0.9rem;
+			font-size: 0.85rem;
 		}
 
 		.popup-eventi-list {
-			padding: 0.8rem;
-			max-height: 300px;
+			padding: 1rem;
+			max-height: 55vh;
+			gap: 1rem;
 		}
 
 		.popup-evento-image {
-			height: 140px;
+			height: 150px;
 		}
 
 		.popup-evento-content {
-			padding: 0.8rem;
+			padding: 1rem 1.1rem 1.1rem;
 		}
 
 		.popup-evento-content h3 {
-			font-size: 1.1rem;
+			font-size: 1.15rem;
+			margin-bottom: 0.4rem;
+		}
+
+		.popup-evento-content p {
+			font-size: 0.9rem;
+			line-height: 1.5;
 		}
 
 		.popup-footer {
-			padding: 0.8rem;
+			padding: 1rem;
+			gap: 0.7rem;
 		}
 
 		.btn-prenota {

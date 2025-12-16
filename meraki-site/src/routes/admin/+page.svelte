@@ -2,10 +2,10 @@
 	import { isAuthenticated, login, authLoading } from '$lib/stores/authStore.js';
 	import { menuStore, updateMenuItem, addMenuItem, deleteMenuItem } from '$lib/stores/menuStore.js';
 	import { categoriesStore, addCategory, updateCategory, deleteCategory, addSubcategory, removeSubcategory } from '$lib/stores/categoriesStore.js';
-	import { eventiStore, loadEventi, addEvento, updateEvento, deleteEvento, isEventoAttivo, eventiLoading } from '$lib/stores/eventiStore.js';
-	import { galleryStore, loadGallery, addGalleryImage, deleteGalleryImage as deleteGalleryImageFromDb, updateGalleryOrder, updateGalleryAltText, galleryLoading } from '$lib/stores/galleryStore.js';
+	import { eventiStore, loadEventi, addEvento, updateEvento, deleteEvento, getStatoEvento, getBadgeText, eventiLoading } from '$lib/stores/eventiStore.js';
+	import { galleryStore, loadGallery, addGalleryImage, deleteGalleryImage as deleteGalleryImageFromDb, updateGalleryOrder, updateGalleryAltText, galleryLoading, themesStore, loadThemes, addTheme, updateTheme, deleteTheme, updateImageTheme, galleryByTheme } from '$lib/stores/galleryStore.js';
 	import { uploadMenuImage, deleteMenuImage, uploadGalleryImage, deleteGalleryImage } from '$lib/utils/imageUpload.js';
-	import { Lock, Package, Tag, Eye, Camera, Plus, Search, X, Edit, Trash2, Check, FileText, DollarSign, ArrowLeft, MousePointerClick, Home, Calendar, Clock, Image as ImageIcon, GripVertical } from 'lucide-svelte';
+	import { Lock, Package, Tag, Eye, Camera, Plus, Search, X, Edit, Trash2, Check, FileText, DollarSign, ArrowLeft, MousePointerClick, Home, Calendar, Clock, Image as ImageIcon, GripVertical, Palette, FolderOpen } from 'lucide-svelte';
 
 	let email = '';
 	let password = '';
@@ -49,6 +49,23 @@
 	let galleryAltText = '';
 	let draggedItem = null;
 	let dragOverItem = null;
+	
+	// Multi-upload management
+	let pendingFiles = []; // Files selezionati in attesa di upload
+	let uploadProgress = 0;
+	let totalFilesToUpload = 0;
+	let isDraggingOver = false;
+	
+	// Theme management
+	let selectedThemeFilter = 'all'; // 'all' o id del tema
+	let showThemeModal = false;
+	let editingTheme = null;
+	let themeFormData = { nome: '', descrizione: '' };
+	let selectedUploadTheme = null; // tema selezionato per upload
+	let showImageThemeModal = false;
+	let editingImageForTheme = null;
+	let selectedImageTheme = null;
+	let showThemesPanel = false; // Panel temi collassabile
 
 	// Modal System
 	let showConfirmModal = false;
@@ -113,6 +130,7 @@
 			// Carica i dati degli store appena l'utente si autentica
 			await Promise.all([
 				loadEventi(),
+				loadThemes(),
 				loadGallery()
 			]);
 		}
@@ -289,33 +307,107 @@
 		}
 	}
 
-	// Gallery functions
-	async function handleGalleryImageUpload(e) {
-		const file = e.target.files[0];
-		if (!file) return;
+	// Gallery functions - Multi upload
+	function handleFilesSelected(e) {
+		const files = Array.from(e.target.files || []);
+		if (files.length === 0) return;
+		
+		// Aggiungi preview per ogni file
+		files.forEach(file => {
+			if (file.type.startsWith('image/')) {
+				const reader = new FileReader();
+				reader.onload = (ev) => {
+					pendingFiles = [...pendingFiles, {
+						file,
+						preview: ev.target.result,
+						name: file.name,
+						id: Date.now() + Math.random()
+					}];
+				};
+				reader.readAsDataURL(file);
+			}
+		});
+		
+		e.target.value = '';
+	}
 
+	function removePendingFile(id) {
+		pendingFiles = pendingFiles.filter(f => f.id !== id);
+	}
+
+	function clearPendingFiles() {
+		pendingFiles = [];
+	}
+
+	async function uploadPendingFiles() {
+		if (pendingFiles.length === 0) return;
+		
 		galleryUploadError = '';
 		isUploadingGalleryImage = true;
+		totalFilesToUpload = pendingFiles.length;
+		uploadProgress = 0;
 
-		try {
-			const fileName = `gallery_${Date.now()}_${file.name}`;
-			const uploadResult = await uploadGalleryImage(file, fileName);
+		const themeId = selectedUploadTheme && selectedUploadTheme !== 'all' ? parseInt(selectedUploadTheme) : null;
 
-			if (uploadResult.error) {
-				galleryUploadError = uploadResult.error;
-			} else {
-				const result = await addGalleryImage(uploadResult.url, '');
-				if (!result.success) {
-					galleryUploadError = result.error;
+		for (let i = 0; i < pendingFiles.length; i++) {
+			const { file } = pendingFiles[i];
+			
+			try {
+				const fileName = `gallery_${Date.now()}_${file.name}`;
+				const uploadResult = await uploadGalleryImage(file, fileName);
+
+				if (uploadResult.error) {
+					galleryUploadError = `Errore su ${file.name}: ${uploadResult.error}`;
+				} else {
+					const result = await addGalleryImage(uploadResult.url, '', themeId);
+					if (!result.success) {
+						galleryUploadError = `Errore su ${file.name}: ${result.error}`;
+					}
 				}
+			} catch (error) {
+				console.error('Upload error:', error);
+				galleryUploadError = `Errore su ${file.name}`;
 			}
-		} catch (error) {
-			console.error('Upload error:', error);
-			galleryUploadError = 'Errore durante il caricamento';
-		} finally {
-			isUploadingGalleryImage = false;
-			e.target.value = '';
+			
+			uploadProgress = i + 1;
 		}
+
+		pendingFiles = [];
+		isUploadingGalleryImage = false;
+		uploadProgress = 0;
+		totalFilesToUpload = 0;
+	}
+
+	// Drag & drop zone
+	function handleDragEnter(e) {
+		e.preventDefault();
+		isDraggingOver = true;
+	}
+
+	function handleDragLeave(e) {
+		e.preventDefault();
+		isDraggingOver = false;
+	}
+
+	function handleDropFiles(e) {
+		e.preventDefault();
+		isDraggingOver = false;
+		
+		const files = Array.from(e.dataTransfer.files || []);
+		files.forEach(file => {
+			if (file.type.startsWith('image/')) {
+				const reader = new FileReader();
+				reader.onload = (ev) => {
+					pendingFiles = [...pendingFiles, {
+						file,
+						preview: ev.target.result,
+						name: file.name,
+						id: Date.now() + Math.random()
+					}];
+				};
+				reader.readAsDataURL(file);
+			}
+		});
 	}
 
 	async function handleDeleteGalleryImage(image) {
@@ -350,6 +442,65 @@
 			editingGalleryImage = null;
 		}
 	}
+
+	// Theme management functions
+	function openThemeModal(theme = null) {
+		editingTheme = theme;
+		if (theme) {
+			themeFormData = { nome: theme.nome, descrizione: theme.descrizione || '' };
+		} else {
+			themeFormData = { nome: '', descrizione: '' };
+		}
+		showThemeModal = true;
+	}
+
+	async function saveTheme() {
+		if (!themeFormData.nome.trim()) return;
+		
+		if (editingTheme) {
+			await updateTheme(editingTheme.id, themeFormData);
+		} else {
+			await addTheme(themeFormData.nome, themeFormData.descrizione);
+		}
+		showThemeModal = false;
+		editingTheme = null;
+	}
+
+	async function handleDeleteTheme(theme) {
+		showConfirm(
+			'Elimina Tema',
+			`Sei sicuro di voler eliminare "${theme.nome}"? Le foto rimarranno nella gallery senza tema.`,
+			async () => {
+				await deleteTheme(theme.id);
+			},
+			{ type: 'danger', confirmText: 'Elimina' }
+		);
+	}
+
+	function openImageThemeModal(image) {
+		editingImageForTheme = image;
+		selectedImageTheme = image.theme_id || '';
+		showImageThemeModal = true;
+	}
+
+	async function saveImageTheme() {
+		if (editingImageForTheme) {
+			const themeId = selectedImageTheme ? parseInt(selectedImageTheme) : null;
+			await updateImageTheme(editingImageForTheme.id, themeId);
+			showImageThemeModal = false;
+			editingImageForTheme = null;
+		}
+	}
+
+	// Filtra immagini per tema selezionato
+	$: filteredGalleryImages = selectedThemeFilter === 'all' 
+		? $galleryStore 
+		: $galleryStore.filter(img => {
+			if (selectedThemeFilter === 'uncategorized') {
+				return !img.theme_id;
+			}
+			return img.theme_id === parseInt(selectedThemeFilter);
+		});
 
 	// Drag and drop handlers
 	function handleDragStart(e, item) {
@@ -740,7 +891,9 @@
 
 				<div class="eventi-list">
 					{#each $eventiStore as evento (evento.id)}
-						<div class="evento-item" class:active={isEventoAttivo(evento)}>
+						{@const stato = getStatoEvento(evento)}
+						{@const badgeText = getBadgeText(evento)}
+						<div class="evento-item" class:active={stato === 'in_corso'} class:upcoming={stato === 'in_arrivo'}>
 							<div class="evento-preview" class:clickable={evento.immagine_url} on:click={() => evento.immagine_url && (zoomedImage = evento.immagine_url)} role="button" tabindex="0" on:keypress={(e) => e.key === 'Enter' && evento.immagine_url && (zoomedImage = evento.immagine_url)}>
 								{#if evento.immagine_url}
 									<img src={evento.immagine_url} alt={evento.titolo} />
@@ -755,8 +908,8 @@
 										<Calendar size={48} />
 									</div>
 								{/if}
-								{#if isEventoAttivo(evento)}
-									<div class="news-badge-admin">NEWS</div>
+								{#if badgeText}
+									<div class="stato-badge-admin" class:in-corso={stato === 'in_corso'} class:in-arrivo={stato === 'in_arrivo'}>{badgeText}</div>
 								{/if}
 							</div>
 							<div class="evento-details">
@@ -890,7 +1043,7 @@
 												<span>Clicca per caricare foto</span>
 												<span class="upload-hint">PNG, JPG fino a 5MB</span>
 											{/if}
-											<input type="file" accept="image/*" on:change={async (e) => {
+											<input type="file" accept="image/*,.heic,.heif" on:change={async (e) => {
 												const file = e.target.files?.[0];
 												if (!file) return;
 
@@ -1088,7 +1241,7 @@
 											<span>Clicca per caricare foto</span>
 											<span class="upload-hint">PNG, JPG fino a 5MB - Abilita modal con click</span>
 										{/if}
-										<input type="file" accept="image/*" on:change={handleImageUpload} hidden disabled={isUploadingImage} />
+										<input type="file" accept="image/*,.heic,.heif" on:change={handleImageUpload} hidden disabled={isUploadingImage} />
 									</label>
 								</div>
 								{#if uploadError}
@@ -1211,30 +1364,193 @@
 					Torna alla Home
 				</button>
 
-				<div class="toolbar">
-					<label class="btn-primary" class:disabled={isUploadingGalleryImage}>
-						{#if isUploadingGalleryImage}
-							<div class="spinner-small"></div>
-							Caricamento...
-						{:else}
-							<Plus size={20} />
-							Aggiungi Immagine
-						{/if}
-						<input 
-							type="file" 
-							accept="image/*" 
-							on:change={handleGalleryImageUpload} 
-							hidden 
-							disabled={isUploadingGalleryImage} 
-						/>
-					</label>
+				<!-- Header compatto con stats -->
+				<div class="gallery-header-bar">
+					<div class="gallery-stats">
+						<span class="stat-item">
+							<ImageIcon size={16} />
+							{$galleryStore.length} foto
+						</span>
+						<span class="stat-item">
+							<Palette size={16} />
+							{$themesStore.length} temi
+						</span>
+					</div>
+					<button class="btn-manage-themes" on:click={() => showThemesPanel = !showThemesPanel}>
+						<Palette size={16} />
+						{showThemesPanel ? 'Chiudi' : 'Gestisci'} Temi
+					</button>
+				</div>
+
+				<!-- Themes Management Panel (collapsible) -->
+				{#if showThemesPanel}
+					<div class="themes-panel">
+						<div class="themes-panel-header">
+							<h4>Gestione Temi</h4>
+							<button class="btn-add-theme-sm" on:click={() => openThemeModal()}>
+								<Plus size={14} />
+								Nuovo
+							</button>
+						</div>
+						<div class="themes-grid">
+							{#each $themesStore as theme (theme.id)}
+								<div class="theme-card">
+									<div class="theme-card-info">
+										<span class="theme-name">{theme.nome}</span>
+										<span class="theme-photo-count">{$galleryStore.filter(img => img.theme_id === theme.id).length} foto</span>
+									</div>
+									<div class="theme-card-actions">
+										<button class="btn-icon-xs" on:click={() => openThemeModal(theme)} title="Modifica">
+											<Edit size={14} />
+										</button>
+										<button class="btn-icon-xs danger" on:click={() => handleDeleteTheme(theme)} title="Elimina">
+											<Trash2 size={14} />
+										</button>
+									</div>
+								</div>
+							{/each}
+							{#if $themesStore.length === 0}
+								<p class="no-themes">Nessun tema creato</p>
+							{/if}
+						</div>
+					</div>
+				{/if}
+
+				<!-- Filter Tabs - Horizontal Scrollable -->
+				<div class="gallery-filters-wrapper">
+					<div class="gallery-filters">
+						<button 
+							class="filter-chip" 
+							class:active={selectedThemeFilter === 'all'}
+							on:click={() => selectedThemeFilter = 'all'}
+						>
+							Tutte
+							<span class="chip-count">{$galleryStore.length}</span>
+						</button>
+						{#each $themesStore as theme (theme.id)}
+							<button 
+								class="filter-chip" 
+								class:active={selectedThemeFilter === theme.id.toString()}
+								on:click={() => selectedThemeFilter = theme.id.toString()}
+							>
+								{theme.nome}
+								<span class="chip-count">{$galleryStore.filter(img => img.theme_id === theme.id).length}</span>
+							</button>
+						{/each}
+						<button 
+							class="filter-chip" 
+							class:active={selectedThemeFilter === 'uncategorized'}
+							on:click={() => selectedThemeFilter = 'uncategorized'}
+						>
+							Senza tema
+							<span class="chip-count">{$galleryStore.filter(img => !img.theme_id).length}</span>
+						</button>
+					</div>
+				</div>
+
+				<!-- Upload Area - Redesigned -->
+				<div 
+					class="upload-zone" 
+					class:dragging={isDraggingOver}
+					class:has-files={pendingFiles.length > 0}
+					on:dragenter={handleDragEnter}
+					on:dragleave={handleDragLeave}
+					on:dragover={(e) => e.preventDefault()}
+					on:drop={handleDropFiles}
+					role="region"
+				>
+					{#if pendingFiles.length === 0}
+						<!-- Empty state - drop zone -->
+						<div class="upload-empty">
+							<label class="upload-trigger">
+								<div class="upload-icon">
+									<Camera size={32} />
+								</div>
+								<span class="upload-text">Trascina le foto qui o <strong>clicca per selezionare</strong></span>
+								<span class="upload-hint">PNG, JPG, HEIC (iPhone) • Max 5MB • Upload multiplo</span>
+								<input 
+									type="file" 
+									accept="image/*,.heic,.heif" 
+									multiple
+									on:change={handleFilesSelected} 
+									hidden 
+									disabled={isUploadingGalleryImage} 
+								/>
+							</label>
+						</div>
+					{:else}
+						<!-- Files selected - preview grid -->
+						<div class="upload-preview-section">
+							<div class="preview-header">
+								<span class="preview-count">{pendingFiles.length} foto selezionate</span>
+								<div class="preview-actions">
+									<label class="btn-add-more">
+										<Plus size={14} />
+										Aggiungi altre
+										<input 
+											type="file" 
+											accept="image/*,.heic,.heif" 
+											multiple
+											on:change={handleFilesSelected} 
+											hidden 
+											disabled={isUploadingGalleryImage} 
+										/>
+									</label>
+									<button class="btn-clear" on:click={clearPendingFiles} disabled={isUploadingGalleryImage}>
+										<X size={14} />
+										Rimuovi tutte
+									</button>
+								</div>
+							</div>
+							
+							<div class="preview-grid">
+								{#each pendingFiles as pf (pf.id)}
+									<div class="preview-item">
+										<img src={pf.preview} alt={pf.name} />
+										<button class="preview-remove" on:click={() => removePendingFile(pf.id)} disabled={isUploadingGalleryImage}>
+											<X size={14} />
+										</button>
+										<span class="preview-name">{pf.name.length > 15 ? pf.name.slice(0, 12) + '...' : pf.name}</span>
+									</div>
+								{/each}
+							</div>
+
+							<div class="upload-controls">
+								<div class="upload-theme-select">
+									<label>Assegna tema:</label>
+									<select bind:value={selectedUploadTheme} disabled={isUploadingGalleryImage}>
+										<option value="">Senza tema</option>
+										{#each $themesStore as theme (theme.id)}
+											<option value={theme.id}>{theme.nome}</option>
+										{/each}
+									</select>
+								</div>
+								
+								<button 
+									class="btn-upload-all" 
+									on:click={uploadPendingFiles}
+									disabled={isUploadingGalleryImage || pendingFiles.length === 0}
+								>
+									{#if isUploadingGalleryImage}
+										<div class="spinner-xs"></div>
+										Caricamento {uploadProgress}/{totalFilesToUpload}...
+									{:else}
+										<Check size={18} />
+										Carica {pendingFiles.length} foto
+									{/if}
+								</button>
+							</div>
+						</div>
+					{/if}
+					
 					{#if galleryUploadError}
-						<p class="error-message inline-error">{galleryUploadError}</p>
+						<p class="upload-error">{galleryUploadError}</p>
 					{/if}
 				</div>
 
+				<!-- Gallery Grid -->
 				<div class="gallery-admin-grid">
-					{#each $galleryStore as image (image.id)}
+					{#each filteredGalleryImages as image (image.id)}
 						<div 
 							class="gallery-admin-item"
 							class:dragging={draggedItem?.id === image.id}
@@ -1247,9 +1563,12 @@
 							role="button"
 							tabindex="0"
 						>
-							<div class="drag-handle" on:mousedown|stopPropagation on:click|stopPropagation>
+							<div class="drag-handle">
 								<GripVertical size={20} />
 							</div>
+							{#if image.gallery_themes}
+								<div class="image-theme-badge">{image.gallery_themes.nome}</div>
+							{/if}
 							<div class="gallery-admin-preview" on:click|stopPropagation={() => zoomedImage = image.immagine_url} role="button" tabindex="0" on:keypress={(e) => e.key === 'Enter' && (zoomedImage = image.immagine_url)}>
 								<img src={image.immagine_url} alt={image.alt_text || 'Gallery image'} />
 								<div class="zoom-hint-gallery">
@@ -1264,6 +1583,9 @@
 								<span class="gallery-order">Ordine: {image.ordine}</span>
 							</div>
 							<div class="gallery-admin-actions">
+								<button class="btn-sm-icon btn-theme" on:click|stopPropagation={() => openImageThemeModal(image)} title="Cambia tema">
+									<Palette size={16} />
+								</button>
 								<button class="btn-sm-icon btn-edit" on:click|stopPropagation={() => openAltTextModal(image)} title="Modifica testo alternativo">
 									<Edit size={16} />
 								</button>
@@ -1275,15 +1597,113 @@
 					{/each}
 				</div>
 
-				{#if $galleryStore.length === 0}
+				{#if filteredGalleryImages.length === 0}
 					<div class="empty-state">
 						<div class="empty-icon">
 							<ImageIcon size={64} strokeWidth={1.5} />
 						</div>
 						<h3>Nessuna immagine</h3>
-						<p>Inizia caricando la tua prima immagine nella gallery</p>
+						<p>{selectedThemeFilter === 'all' ? 'Inizia caricando la tua prima immagine nella gallery' : 'Nessuna immagine in questo tema'}</p>
 					</div>
 				{/if}
+			</div>
+		{/if}
+
+		<!-- Theme Modal -->
+		{#if showThemeModal}
+			<div class="modal-overlay" on:click={() => showThemeModal = false}>
+				<div class="modal-category" on:click|stopPropagation>
+					<div class="modal-header-modern">
+						<div>
+							<h2>
+								<Palette size={28} class="inline-icon" />
+								{editingTheme ? 'Modifica Tema' : 'Nuovo Tema'}
+							</h2>
+							<p class="modal-subtitle">Organizza le foto per categoria</p>
+						</div>
+						<button class="close-btn-modern" on:click={() => showThemeModal = false}>
+							<X size={24} />
+						</button>
+					</div>
+					
+					<div class="modal-body-category">
+						<div class="form-group-modern">
+							<label>Nome Tema *</label>
+							<input 
+								type="text" 
+								bind:value={themeFormData.nome} 
+								placeholder="es: Cocktail, Il Locale, Piatti..." 
+								class="input-modern" 
+							/>
+						</div>
+						<div class="form-group-modern">
+							<label>Descrizione</label>
+							<textarea 
+								bind:value={themeFormData.descrizione} 
+								placeholder="Breve descrizione del tema (opzionale)" 
+								class="input-modern textarea-modern"
+								rows="3"
+							></textarea>
+						</div>
+					</div>
+
+					<div class="modal-footer-modern">
+						<button class="btn-cancel-modern" on:click={() => showThemeModal = false}>
+							Annulla
+						</button>
+						<button class="btn-save-modern" on:click={saveTheme} disabled={!themeFormData.nome.trim()}>
+							<Check size={20} />
+							{editingTheme ? 'Salva' : 'Crea Tema'}
+						</button>
+					</div>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Image Theme Modal -->
+		{#if showImageThemeModal}
+			<div class="modal-overlay" on:click={() => showImageThemeModal = false}>
+				<div class="modal-category" on:click|stopPropagation>
+					<div class="modal-header-modern">
+						<div>
+							<h2>
+								<Palette size={28} class="inline-icon" />
+								Assegna Tema
+							</h2>
+							<p class="modal-subtitle">Sposta questa foto in un tema</p>
+						</div>
+						<button class="close-btn-modern" on:click={() => showImageThemeModal = false}>
+							<X size={24} />
+						</button>
+					</div>
+					
+					<div class="modal-body-category">
+						{#if editingImageForTheme}
+							<div class="preview-mini">
+								<img src={editingImageForTheme.immagine_url} alt="Preview" />
+							</div>
+						{/if}
+						<div class="form-group-modern">
+							<label>Seleziona Tema</label>
+							<select bind:value={selectedImageTheme} class="input-modern">
+								<option value="">Senza Tema</option>
+								{#each $themesStore as theme (theme.id)}
+									<option value={theme.id}>{theme.nome}</option>
+								{/each}
+							</select>
+						</div>
+					</div>
+
+					<div class="modal-footer-modern">
+						<button class="btn-cancel-modern" on:click={() => showImageThemeModal = false}>
+							Annulla
+						</button>
+						<button class="btn-save-modern" on:click={saveImageTheme}>
+							<Check size={20} />
+							Assegna
+						</button>
+					</div>
+				</div>
 			</div>
 		{/if}
 
@@ -2526,18 +2946,29 @@
 		color: var(--grigio-scuro);
 	}
 
-	.news-badge-admin {
+	.stato-badge-admin {
 		position: absolute;
 		top: 0.5rem;
 		left: 0.5rem;
 		padding: 0.4rem 0.8rem;
-		background: #FF4444;
 		color: white;
 		font-weight: 800;
 		font-size: 0.75rem;
 		letter-spacing: 0.1em;
 		border-radius: 6px;
 		animation: pulse 2s ease-in-out infinite;
+	}
+
+	.stato-badge-admin.in-corso {
+		background: #22c55e;
+	}
+
+	.stato-badge-admin.in-arrivo {
+		background: #f59e0b;
+	}
+
+	.evento-item.upcoming {
+		border-color: #f59e0b;
 	}
 
 	.evento-details {
@@ -2701,7 +3132,528 @@
 		padding: 2rem;
 	}
 
-	/* Gallery Management */
+	/* Gallery Management - Redesigned */
+	
+	/* Header Bar */
+	.gallery-header-bar {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 1rem;
+		padding: 0.75rem 1rem;
+		background: var(--bianco);
+		border-radius: 12px;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+	}
+
+	.gallery-stats {
+		display: flex;
+		gap: 1.5rem;
+	}
+
+	.stat-item {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		font-size: 0.9rem;
+		color: var(--grigio-scuro);
+		font-weight: 500;
+	}
+
+	.btn-manage-themes {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.5rem 1rem;
+		background: transparent;
+		border: 2px solid var(--verde-meraki);
+		color: var(--verde-meraki);
+		border-radius: 8px;
+		font-size: 0.85rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.btn-manage-themes:hover {
+		background: var(--verde-meraki);
+		color: var(--bianco);
+	}
+
+	/* Themes Panel - Collapsible */
+	.themes-panel {
+		background: var(--bianco);
+		border-radius: 12px;
+		padding: 1rem;
+		margin-bottom: 1rem;
+		border: 2px solid var(--verde-meraki);
+		animation: slideDown 0.2s ease;
+	}
+
+	@keyframes slideDown {
+		from { opacity: 0; transform: translateY(-10px); }
+		to { opacity: 1; transform: translateY(0); }
+	}
+
+	.themes-panel-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 0.75rem;
+		padding-bottom: 0.75rem;
+		border-bottom: 1px solid var(--grigio);
+	}
+
+	.themes-panel-header h4 {
+		margin: 0;
+		font-size: 0.95rem;
+		color: var(--nero);
+	}
+
+	.btn-add-theme-sm {
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
+		padding: 0.4rem 0.8rem;
+		background: var(--verde-meraki);
+		color: var(--bianco);
+		border: none;
+		border-radius: 6px;
+		font-size: 0.8rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.btn-add-theme-sm:hover {
+		background: var(--verde-light);
+	}
+
+	.themes-grid {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	.theme-card {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 0.75rem;
+		background: var(--grigio-chiaro);
+		border-radius: 8px;
+		transition: all 0.2s;
+	}
+
+	.theme-card:hover {
+		background: var(--grigio);
+	}
+
+	.theme-card-info {
+		display: flex;
+		flex-direction: column;
+		gap: 0.1rem;
+	}
+
+	.theme-name {
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--nero);
+	}
+
+	.theme-photo-count {
+		font-size: 0.7rem;
+		color: var(--grigio-scuro);
+	}
+
+	.theme-card-actions {
+		display: flex;
+		gap: 0.25rem;
+	}
+
+	.btn-icon-xs {
+		width: 24px;
+		height: 24px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: transparent;
+		border: none;
+		border-radius: 4px;
+		color: var(--grigio-scuro);
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.btn-icon-xs:hover {
+		background: var(--bianco);
+		color: var(--verde-meraki);
+	}
+
+	.btn-icon-xs.danger:hover {
+		color: #dc3545;
+	}
+
+	.no-themes {
+		font-size: 0.85rem;
+		color: var(--grigio-scuro);
+		font-style: italic;
+		margin: 0;
+	}
+
+	/* Filter Chips - Horizontal Scroll */
+	.gallery-filters-wrapper {
+		margin-bottom: 1rem;
+		overflow: hidden;
+	}
+
+	.gallery-filters {
+		display: flex;
+		gap: 0.5rem;
+		overflow-x: auto;
+		padding: 0.5rem 0;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.gallery-filters::-webkit-scrollbar {
+		display: none;
+	}
+
+	.filter-chip {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.5rem 1rem;
+		background: var(--bianco);
+		border: 2px solid var(--grigio);
+		border-radius: 20px;
+		font-size: 0.85rem;
+		font-weight: 500;
+		color: var(--grigio-scuro);
+		cursor: pointer;
+		transition: all 0.2s;
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+
+	.filter-chip:hover {
+		border-color: var(--verde-meraki);
+		color: var(--verde-meraki);
+	}
+
+	.filter-chip.active {
+		background: var(--verde-meraki);
+		border-color: var(--verde-meraki);
+		color: var(--bianco);
+	}
+
+	.chip-count {
+		padding: 0.1rem 0.4rem;
+		background: rgba(0, 0, 0, 0.1);
+		border-radius: 10px;
+		font-size: 0.75rem;
+	}
+
+	.filter-chip.active .chip-count {
+		background: rgba(255, 255, 255, 0.25);
+	}
+
+	/* Upload Zone - Redesigned */
+	.upload-zone {
+		background: var(--bianco);
+		border: 2px dashed var(--grigio);
+		border-radius: 12px;
+		margin-bottom: 1.5rem;
+		transition: all 0.3s ease;
+	}
+
+	.upload-zone.dragging {
+		border-color: var(--verde-meraki);
+		background: rgba(21, 67, 21, 0.03);
+		transform: scale(1.01);
+	}
+
+	.upload-zone.has-files {
+		border-style: solid;
+		border-color: var(--verde-meraki);
+	}
+
+	.upload-empty {
+		padding: 2rem;
+	}
+
+	.upload-trigger {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.5rem;
+		cursor: pointer;
+		padding: 1rem;
+	}
+
+	.upload-icon {
+		width: 64px;
+		height: 64px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--grigio-chiaro);
+		border-radius: 50%;
+		color: var(--verde-meraki);
+		margin-bottom: 0.5rem;
+	}
+
+	.upload-text {
+		font-size: 0.95rem;
+		color: var(--grigio-scuro);
+	}
+
+	.upload-text strong {
+		color: var(--verde-meraki);
+	}
+
+	.upload-hint {
+		font-size: 0.8rem;
+		color: var(--grigio-scuro);
+		opacity: 0.8;
+	}
+
+	/* Upload Preview Section */
+	.upload-preview-section {
+		padding: 1rem;
+	}
+
+	.preview-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 1rem;
+		padding-bottom: 0.75rem;
+		border-bottom: 1px solid var(--grigio);
+	}
+
+	.preview-count {
+		font-weight: 600;
+		color: var(--verde-meraki);
+		font-size: 0.9rem;
+	}
+
+	.preview-actions {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.btn-add-more, .btn-clear {
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
+		padding: 0.4rem 0.8rem;
+		border-radius: 6px;
+		font-size: 0.8rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.btn-add-more {
+		background: var(--grigio-chiaro);
+		border: 1px solid var(--grigio);
+		color: var(--nero);
+	}
+
+	.btn-add-more:hover {
+		background: var(--grigio);
+	}
+
+	.btn-clear {
+		background: transparent;
+		border: 1px solid #dc3545;
+		color: #dc3545;
+	}
+
+	.btn-clear:hover {
+		background: #dc3545;
+		color: white;
+	}
+
+	.preview-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+		gap: 0.75rem;
+		margin-bottom: 1rem;
+	}
+
+	.preview-item {
+		position: relative;
+		aspect-ratio: 1;
+		border-radius: 8px;
+		overflow: hidden;
+		background: var(--grigio-chiaro);
+	}
+
+	.preview-item img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.preview-remove {
+		position: absolute;
+		top: 0.25rem;
+		right: 0.25rem;
+		width: 22px;
+		height: 22px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(220, 53, 69, 0.9);
+		color: white;
+		border: none;
+		border-radius: 50%;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.preview-remove:hover {
+		background: #dc3545;
+		transform: scale(1.1);
+	}
+
+	.preview-name {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		padding: 0.3rem;
+		background: rgba(0, 0, 0, 0.7);
+		color: white;
+		font-size: 0.65rem;
+		text-align: center;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	/* Upload Controls */
+	.upload-controls {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 1rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--grigio);
+	}
+
+	.upload-theme-select {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.upload-theme-select label {
+		font-size: 0.85rem;
+		color: var(--grigio-scuro);
+		white-space: nowrap;
+	}
+
+	.upload-theme-select select {
+		padding: 0.4rem 0.75rem;
+		border: 1px solid var(--grigio);
+		border-radius: 6px;
+		font-size: 0.85rem;
+		background: var(--bianco);
+	}
+
+	.btn-upload-all {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.6rem 1.5rem;
+		background: var(--verde-meraki);
+		color: var(--bianco);
+		border: none;
+		border-radius: 8px;
+		font-size: 0.9rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.btn-upload-all:hover:not(:disabled) {
+		background: var(--verde-light);
+		transform: translateY(-1px);
+	}
+
+	.btn-upload-all:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.spinner-xs {
+		width: 16px;
+		height: 16px;
+		border: 2px solid rgba(255, 255, 255, 0.3);
+		border-top-color: white;
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+	}
+
+	.upload-error {
+		margin: 0.75rem 0 0 0;
+		padding: 0.5rem 1rem;
+		background: rgba(220, 53, 69, 0.1);
+		color: #dc3545;
+		border-radius: 6px;
+		font-size: 0.85rem;
+	}
+
+	/* Image Theme Badge */
+	.image-theme-badge {
+		position: absolute;
+		top: 0.5rem;
+		right: 0.5rem;
+		padding: 0.3rem 0.7rem;
+		background: var(--verde-meraki);
+		color: var(--bianco);
+		font-size: 0.7rem;
+		font-weight: 600;
+		border-radius: 12px;
+		z-index: 5;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+
+	.btn-sm-icon.btn-theme {
+		background: #6f42c1;
+	}
+
+	.btn-sm-icon.btn-theme:hover {
+		background: #5a32a3;
+	}
+
+	/* Preview Mini */
+	.preview-mini {
+		width: 100%;
+		max-width: 200px;
+		aspect-ratio: 1;
+		margin: 0 auto 1.5rem;
+		border-radius: 12px;
+		overflow: hidden;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	}
+
+	.preview-mini img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.textarea-modern {
+		resize: vertical;
+		min-height: 80px;
+	}
+
 	.gallery-admin-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -3153,6 +4105,65 @@
 		.btn-save-modern {
 			width: 100%;
 			justify-content: center;
+		}
+
+		/* Gallery Mobile */
+		.gallery-header-bar {
+			flex-direction: column;
+			gap: 0.75rem;
+			align-items: stretch;
+		}
+
+		.gallery-stats {
+			justify-content: center;
+		}
+
+		.btn-manage-themes {
+			justify-content: center;
+		}
+
+		.themes-grid {
+			justify-content: center;
+		}
+
+		.preview-header {
+			flex-direction: column;
+			gap: 0.75rem;
+			align-items: stretch;
+		}
+
+		.preview-actions {
+			justify-content: center;
+		}
+
+		.preview-grid {
+			grid-template-columns: repeat(3, 1fr);
+		}
+
+		.upload-controls {
+			flex-direction: column;
+			gap: 0.75rem;
+		}
+
+		.upload-theme-select {
+			width: 100%;
+			justify-content: center;
+		}
+
+		.btn-upload-all {
+			width: 100%;
+			justify-content: center;
+		}
+	}
+
+	@media (max-width: 480px) {
+		.preview-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+
+		.gallery-filters {
+			padding-left: 0.5rem;
+			padding-right: 0.5rem;
 		}
 	}
 </style>

@@ -32,23 +32,30 @@ export async function loadEventi() {
     }
 }
 
-// Carica solo eventi attivi (pubblicati e non terminati)
-export async function loadEventiAttivi() {
+// Carica eventi visibili: IN CORSO + IN ARRIVO (entro 14 giorni)
+export async function loadEventiVisibili() {
     try {
-        const now = new Date().toISOString();
+        const now = new Date();
+        const tra14giorni = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+        
         const { data, error } = await supabase
             .from('eventi')
             .select('*')
-            .lte('data_inizio', now) // pubblicato
-            .gte('data_fine', now)   // non terminato
-            .order('data_inizio', { ascending: false });
+            .gte('data_fine', now.toISOString())        // non ancora terminato
+            .lte('data_inizio', tra14giorni.toISOString()) // inizia entro 14 giorni
+            .order('data_inizio', { ascending: true });
         
         if (error) throw error;
         return data || [];
     } catch (error) {
-        console.error('Error loading eventi attivi:', error);
+        console.error('Error loading eventi visibili:', error);
         return [];
     }
+}
+
+// Alias per retrocompatibilità
+export async function loadEventiAttivi() {
+    return loadEventiVisibili();
 }
 
 // Aggiungi evento
@@ -126,12 +133,46 @@ export async function deleteEvento(id) {
     }
 }
 
-// Verifica se evento è attivo
+// Verifica se evento è attivo (in corso)
 export function isEventoAttivo(evento) {
     const now = new Date();
     const inizio = new Date(evento.data_inizio);
     const fine = new Date(evento.data_fine);
     
     return now >= inizio && now <= fine;
+}
+
+// Verifica se evento è in arrivo (non ancora iniziato ma entro 14 giorni)
+export function isEventoInArrivo(evento) {
+    const now = new Date();
+    const inizio = new Date(evento.data_inizio);
+    
+    return now < inizio;
+}
+
+// Ottiene lo stato dell'evento per il badge
+// Ritorna: 'in_corso' | 'in_arrivo' | 'scaduto'
+export function getStatoEvento(evento) {
+    const now = new Date();
+    const inizio = new Date(evento.data_inizio);
+    const fine = new Date(evento.data_fine);
+    
+    if (now >= inizio && now <= fine) {
+        return 'in_corso';
+    } else if (now < inizio) {
+        return 'in_arrivo';
+    } else {
+        return 'scaduto';
+    }
+}
+
+// Testo badge per lo stato
+export function getBadgeText(evento) {
+    const stato = getStatoEvento(evento);
+    switch (stato) {
+        case 'in_corso': return 'IN CORSO';
+        case 'in_arrivo': return 'IN ARRIVO';
+        default: return null;
+    }
 }
 

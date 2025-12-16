@@ -1,7 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { Home, Calendar, Clock, X } from 'lucide-svelte';
-	import { eventiStore, loadEventi, isEventoAttivo } from '$lib/stores/eventiStore';
+	import { eventiStore, loadEventi, getStatoEvento, getBadgeText } from '$lib/stores/eventiStore';
 
 	let zoomedImage = null;
 
@@ -50,37 +50,40 @@
 			{#if eventi.length > 0}
 				<div class="eventi-grid">
 					{#each eventi as evento, i}
+						{@const badgeText = getBadgeText(evento)}
+						{@const stato = getStatoEvento(evento)}
+						{@const dataFormattata = new Date(evento.data_inizio).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }).toUpperCase()}
 						<article class="evento-card" style="animation-delay: {i * 0.1}s">
+							<!-- Immagine con overlay gradient -->
 							<div class="evento-image" on:click={() => openImageZoom(evento.immagine_url || '/Hero-Image-2-1.webp')} role="button" tabindex="0" on:keypress={(e) => e.key === 'Enter' && openImageZoom(evento.immagine_url || '/Hero-Image-2-1.webp')}>
 								<img src={evento.immagine_url || '/Hero-Image-2-1.webp'} alt={evento.titolo} />
-								{#if isEventoAttivo(evento)}
-									<div class="news-badge">NEWS</div>
+								<div class="image-overlay"></div>
+								
+								<!-- Badge stato in alto a sinistra -->
+								{#if badgeText}
+									<div class="stato-badge" class:in-corso={stato === 'in_corso'} class:in-arrivo={stato === 'in_arrivo'}>{badgeText}</div>
 								{/if}
-								<div class="evento-badge">
-									<Calendar size={18} />
-								</div>
-								<div class="zoom-hint">
-									<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-										<line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
-									</svg>
+								
+								<!-- Data box in alto a destra -->
+								<div class="data-box">
+									<span class="data-giorno">{dataFormattata.split(' ')[0]}</span>
+									<span class="data-mese">{dataFormattata.split(' ')[1]}</span>
 								</div>
 							</div>
+							
+							<!-- Contenuto -->
 							<div class="evento-content">
 								<h2 class="evento-title">{evento.titolo}</h2>
-								<div class="evento-meta">
-									<div class="meta-item">
-										<Calendar size={18} />
-										<span>{formatData(evento.data_inizio)}</span>
+								
+								{#if evento.orario}
+									<div class="evento-orario">
+										<Clock size={14} />
+										<span>{evento.orario}</span>
 									</div>
-									{#if evento.orario}
-										<div class="meta-item">
-											<Clock size={18} />
-											<span>{evento.orario}</span>
-										</div>
-									{/if}
-								</div>
+								{/if}
+								
 								<p class="evento-description">{evento.descrizione}</p>
+								
 								<a href="tel:+393516327144" class="evento-cta">
 									Prenota Ora
 								</a>
@@ -189,11 +192,13 @@
 
 	.evento-card {
 		background: var(--bianco);
-		border-radius: 24px;
+		border-radius: 20px;
 		overflow: hidden;
-		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-		transition: all 0.3s ease;
+		box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 		animation: fadeInUp 0.5s ease-out backwards;
+		display: flex;
+		flex-direction: column;
 	}
 
 	@keyframes fadeInUp {
@@ -208,13 +213,14 @@
 	}
 
 	.evento-card:hover {
-		transform: translateY(-8px);
-		box-shadow: 0 12px 40px rgba(21, 67, 21, 0.15);
+		transform: translateY(-6px);
+		box-shadow: 0 16px 48px rgba(21, 67, 21, 0.12);
 	}
 
+	/* Immagine con overlay */
 	.evento-image {
 		position: relative;
-		aspect-ratio: 16 / 9;
+		aspect-ratio: 16 / 10;
 		overflow: hidden;
 		cursor: zoom-in;
 	}
@@ -223,130 +229,161 @@
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
-		transition: transform 0.5s ease;
+		transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	.image-overlay {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(
+			180deg,
+			rgba(0, 0, 0, 0.1) 0%,
+			transparent 40%,
+			transparent 60%,
+			rgba(0, 0, 0, 0.15) 100%
+		);
+		pointer-events: none;
 	}
 
 	.evento-card:hover .evento-image img {
-		transform: scale(1.1);
+		transform: scale(1.06);
 	}
 
-	.zoom-hint {
+	/* Badge stato */
+	.stato-badge {
 		position: absolute;
-		bottom: 1rem;
-		right: 1rem;
-		width: 40px;
-		height: 40px;
-		background: rgba(21, 67, 21, 0.9);
-		color: white;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		opacity: 0;
-		transition: opacity 0.3s ease;
-		pointer-events: none;
-		z-index: 2;
-	}
-
-	.evento-image:hover .zoom-hint {
-		opacity: 1;
-	}
-
-	.news-badge {
-		position: absolute;
-		top: 1rem;
-		left: 1rem;
-		padding: 0.5rem 1rem;
-		background: #FF4444;
+		top: 0.8rem;
+		left: 0.8rem;
+		padding: 0.35rem 0.7rem;
 		color: var(--bianco);
-		font-weight: 800;
-		font-size: 0.9rem;
+		font-weight: 700;
+		font-size: 0.65rem;
 		letter-spacing: 0.1em;
-		border-radius: 8px;
-		box-shadow: 0 4px 12px rgba(255, 68, 68, 0.4);
-		animation: pulse 2s ease-in-out infinite;
-		z-index: 2;
+		border-radius: 6px;
+		animation: badgePulse 2.5s ease-in-out infinite;
+		z-index: 3;
+		text-transform: uppercase;
 	}
 
-	@keyframes pulse {
-		0%, 100% {
-			transform: scale(1);
-			box-shadow: 0 4px 12px rgba(255, 68, 68, 0.4);
-		}
-		50% {
-			transform: scale(1.05);
-			box-shadow: 0 6px 20px rgba(255, 68, 68, 0.6);
-		}
+	.stato-badge.in-corso {
+		background: #166534;
+		box-shadow: 0 2px 8px rgba(22, 101, 52, 0.4);
 	}
 
-	.evento-badge {
+	.stato-badge.in-arrivo {
+		background: #ea580c;
+		box-shadow: 0 2px 8px rgba(234, 88, 12, 0.4);
+	}
+
+	@keyframes badgePulse {
+		0%, 100% { transform: scale(1); opacity: 1; }
+		50% { transform: scale(1.05); opacity: 0.95; }
+	}
+
+	/* Data box */
+	.data-box {
 		position: absolute;
-		top: 1rem;
-		right: 1rem;
-		width: 48px;
-		height: 48px;
-		background: var(--verde-meraki);
-		color: var(--bianco);
-		border-radius: 50%;
+		top: 0.8rem;
+		right: 0.8rem;
+		background: var(--bianco);
+		border-radius: 10px;
+		padding: 0.5rem 0.7rem;
 		display: flex;
+		flex-direction: column;
 		align-items: center;
-		justify-content: center;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-		z-index: 1;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		z-index: 3;
+		min-width: 48px;
 	}
 
+	.data-giorno {
+		font-size: 1.4rem;
+		font-weight: 800;
+		color: var(--verde-meraki);
+		line-height: 1;
+	}
+
+	.data-mese {
+		font-size: 0.6rem;
+		font-weight: 600;
+		color: var(--grigio-scuro);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		margin-top: 2px;
+	}
+
+	/* Contenuto */
 	.evento-content {
-		padding: 2rem;
+		padding: 1.4rem 1.5rem 1.5rem;
+		display: flex;
+		flex-direction: column;
+		flex: 1;
 	}
 
 	.evento-title {
-		font-size: 1.8rem;
+		font-family: 'Playfair Display', serif;
+		font-size: 1.5rem;
+		font-weight: 700;
 		color: var(--verde-meraki);
-		margin-bottom: 1rem;
+		margin: 0 0 0.6rem 0;
+		line-height: 1.2;
 	}
 
-	.evento-meta {
-		display: flex;
-		flex-direction: column;
-		gap: 0.8rem;
-		margin-bottom: 1.5rem;
-	}
-
-	.meta-item {
-		display: flex;
+	.evento-orario {
+		display: inline-flex;
 		align-items: center;
-		gap: 0.8rem;
+		gap: 0.4rem;
 		color: var(--grigio-scuro);
-		font-size: 0.95rem;
+		font-size: 0.85rem;
+		font-weight: 500;
+		margin-bottom: 0.8rem;
 	}
 
-	.meta-item svg {
-		flex-shrink: 0;
+	.evento-orario svg {
+		color: var(--verde-meraki);
+		opacity: 0.7;
 	}
 
 	.evento-description {
-		color: var(--nero);
+		color: #555;
+		font-size: 0.95rem;
 		line-height: 1.6;
-		margin-bottom: 1.5rem;
+		margin: 0 0 1.2rem 0;
 	}
 
 	.evento-cta {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		padding: 0.9rem 2rem;
-		background: linear-gradient(135deg, var(--verde-meraki) 0%, var(--verde-light) 100%);
+		padding: 0.8rem 1.5rem;
+		background: var(--verde-meraki);
 		color: var(--bianco);
 		text-decoration: none;
-		border-radius: 50px;
+		border-radius: 10px;
 		font-weight: 600;
+		font-size: 0.9rem;
 		transition: all 0.3s ease;
-		width: 100%;
+		margin-top: auto;
 	}
 
 	.evento-cta:hover {
+		background: var(--verde-light);
 		transform: translateY(-2px);
-		box-shadow: 0 8px 24px rgba(21, 67, 21, 0.3);
+		box-shadow: 0 6px 20px rgba(21, 67, 21, 0.25);
+	}
+
+	@media (min-width: 768px) {
+		.evento-content {
+			padding: 1.6rem 1.8rem 1.8rem;
+		}
+
+		.evento-title {
+			font-size: 1.7rem;
+		}
+
+		.data-giorno {
+			font-size: 1.6rem;
+		}
 	}
 
 	/* Empty State */

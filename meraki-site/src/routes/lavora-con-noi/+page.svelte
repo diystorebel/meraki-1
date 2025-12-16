@@ -165,6 +165,7 @@
 						type="text" 
 						id="nome" 
 						bind:value={nome} 
+						placeholder="Il tuo nome"
 						required 
 						disabled={loading}
 					/>
@@ -176,6 +177,7 @@
 						type="text" 
 						id="cognome" 
 						bind:value={cognome} 
+						placeholder="Il tuo cognome"
 						required 
 						disabled={loading}
 					/>
@@ -189,6 +191,7 @@
 						type="email" 
 						id="email" 
 						bind:value={email} 
+						placeholder="esempio@email.com"
 						required 
 						disabled={loading}
 					/>
@@ -200,6 +203,7 @@
 						type="tel" 
 						id="telefono" 
 						bind:value={telefono} 
+						placeholder="+39 333 1234567"
 						required 
 						disabled={loading}
 					/>
@@ -352,6 +356,15 @@
 		font-size: 1rem;
 		transition: all 0.3s;
 		font-family: inherit;
+		background: var(--bianco);
+		color: var(--nero);
+	}
+
+	/* Placeholder più visibili */
+	input::placeholder,
+	textarea::placeholder {
+		color: #888;
+		opacity: 1;
 	}
 
 	input[type="text"]:focus,

@@ -39,7 +39,7 @@
 				</p>
 				<div class="highlight-box">
 					<p>
-						Se anche voi volete entrare a fare parte della nostra grande famiglia… vi aspettiamo tutti i giorni in via Re Umberto I°, 36a – 20045 Lainate (MI).
+						Vi aspettiamo tutti i giorni in via Re Umberto I°, 36a  20045 Lainate (MI).
 					</p>
 				</div>
 

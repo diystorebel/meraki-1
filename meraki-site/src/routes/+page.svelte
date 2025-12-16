@@ -2,16 +2,22 @@
 	import { onMount } from 'svelte';
 	import { fade, scale } from 'svelte/transition';
 	import { Menu, Users, Clock, MapPin, Image, Calendar } from 'lucide-svelte';
-	import { loadEventiAttivi } from '$lib/stores/eventiStore';
+	import { loadEventiVisibili, getStatoEvento } from '$lib/stores/eventiStore';
 
 	let showSplash = false;
 	let showDashboard = false;
-	let hasEventiAttivi = false;
+	let eventiVisibili = [];
+	let eventiBadgeText = null;
 
 	onMount(async () => {
-		// Controlla se ci sono eventi attivi
-		const eventiAttivi = await loadEventiAttivi();
-		hasEventiAttivi = eventiAttivi.length > 0;
+		// Controlla se ci sono eventi visibili (in corso o in arrivo)
+		eventiVisibili = await loadEventiVisibili();
+		
+		// Determina il testo del badge (priorità: IN CORSO > IN ARRIVO)
+		if (eventiVisibili.length > 0) {
+			const hasInCorso = eventiVisibili.some(e => getStatoEvento(e) === 'in_corso');
+			eventiBadgeText = hasInCorso ? 'IN CORSO' : 'IN ARRIVO';
+		}
 
 		// Splash screen solo al primo ingresso nella sessione
 		const hasSeenSplash = sessionStorage.getItem('hasSeenSplash');
@@ -96,8 +102,8 @@
 
 			<!-- Eventi -->
 			<a href="/eventi" class="dash-card eventi-card">
-				{#if hasEventiAttivi}
-					<div class="news-badge-home">NEWS</div>
+				{#if eventiBadgeText}
+					<div class="news-badge-home" class:in-arrivo={eventiBadgeText === 'IN ARRIVO'}>{eventiBadgeText}</div>
 				{/if}
 				<div class="card-icon">
 					<Calendar size={28} strokeWidth={1.5} class="icon-responsive" />
@@ -273,18 +279,34 @@
 
 	.news-badge-home {
 		position: absolute;
-		top: -8px;
-		right: -8px;
-		padding: 0.4rem 0.7rem;
-		background: #FF4444;
+		top: -6px;
+		right: -6px;
+		padding: 0.25rem 0.5rem;
+		background: #166534;
 		color: white;
-		font-weight: 800;
-		font-size: 0.7rem;
-		letter-spacing: 0.1em;
-		border-radius: 8px;
-		box-shadow: 0 4px 12px rgba(255, 68, 68, 0.4);
-		animation: pulse 2s ease-in-out infinite;
+		font-weight: 700;
+		font-size: 0.55rem;
+		letter-spacing: 0.08em;
+		border-radius: 6px;
+		box-shadow: 0 3px 10px rgba(22, 101, 52, 0.4);
+		animation: badgePulse 2s ease-in-out infinite;
 		z-index: 10;
+	}
+
+	.news-badge-home.in-arrivo {
+		background: #ea580c;
+		box-shadow: 0 3px 10px rgba(234, 88, 12, 0.4);
+	}
+
+	@keyframes badgePulse {
+		0%, 100% {
+			transform: scale(1);
+			opacity: 1;
+		}
+		50% {
+			transform: scale(1.08);
+			opacity: 0.9;
+		}
 	}
 
 	.dash-card::before {

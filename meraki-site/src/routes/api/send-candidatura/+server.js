@@ -1,4 +1,9 @@
 import { json } from '@sveltejs/kit';
+import { RESEND_API_KEY } from '$env/static/private';
+
+// Configurazione destinatario email
+// TODO: Cambiare con email ufficiale Meraki quando disponibile
+const EMAIL_DESTINATARIO = 'gmar.scio@gmail.com';
 
 export async function POST({ request }) {
 	try {
@@ -12,62 +17,96 @@ export async function POST({ request }) {
 
 		// Prepara email HTML
 		const emailHTML = `
-			<h2>Nuova Candidatura - Meraki Lainate</h2>
-			<p><strong>Nome:</strong> ${nome}</p>
-			<p><strong>Cognome:</strong> ${cognome}</p>
-			<p><strong>Email:</strong> ${email}</p>
-			<p><strong>Telefono:</strong> ${telefono}</p>
-			<p><strong>Messaggio:</strong></p>
-			<div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0;">
-				${messaggio.replace(/\n/g, '<br>')}
+			<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+				<div style="background: #154315; color: white; padding: 20px; text-align: center;">
+					<h2 style="margin: 0;">Nuova Candidatura - Meraki Lainate</h2>
+				</div>
+				<div style="padding: 20px; background: #f9f9f9;">
+					<table style="width: 100%; border-collapse: collapse;">
+						<tr>
+							<td style="padding: 10px 0; border-bottom: 1px solid #ddd;"><strong>Nome:</strong></td>
+							<td style="padding: 10px 0; border-bottom: 1px solid #ddd;">${nome}</td>
+						</tr>
+						<tr>
+							<td style="padding: 10px 0; border-bottom: 1px solid #ddd;"><strong>Cognome:</strong></td>
+							<td style="padding: 10px 0; border-bottom: 1px solid #ddd;">${cognome}</td>
+						</tr>
+						<tr>
+							<td style="padding: 10px 0; border-bottom: 1px solid #ddd;"><strong>Email:</strong></td>
+							<td style="padding: 10px 0; border-bottom: 1px solid #ddd;"><a href="mailto:${email}">${email}</a></td>
+						</tr>
+						<tr>
+							<td style="padding: 10px 0; border-bottom: 1px solid #ddd;"><strong>Telefono:</strong></td>
+							<td style="padding: 10px 0; border-bottom: 1px solid #ddd;"><a href="tel:${telefono}">${telefono}</a></td>
+						</tr>
+					</table>
+					<div style="margin-top: 20px;">
+						<strong>Messaggio:</strong>
+						<div style="background: white; padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 4px solid #154315;">
+							${messaggio.replace(/\n/g, '<br>')}
+						</div>
+					</div>
+					<p style="margin-top: 20px; padding: 10px; background: #e8f5e9; border-radius: 5px;">
+						📎 <strong>CV allegato:</strong> ${cv_filename}
+					</p>
+				</div>
+				<div style="background: #333; color: #999; padding: 15px; text-align: center; font-size: 12px;">
+					Candidatura ricevuta il ${new Date().toLocaleString('it-IT')}<br>
+					Questo messaggio è stato inviato automaticamente dal sito Meraki Lainate
+				</div>
 			</div>
-			<p><strong>CV allegato:</strong> ${cv_filename}</p>
-			<hr>
-			<p style="font-size: 12px; color: #666;">
-				Candidatura ricevuta il ${new Date().toLocaleString('it-IT')}
-			</p>
 		`;
 
-		// Prepara payload per servizio email (esempio con Resend)
+		// Verifica API key configurata
+		if (!RESEND_API_KEY) {
+			console.error('RESEND_API_KEY non configurata');
+			return json({ error: 'Servizio email non configurato' }, { status: 500 });
+		}
+
+		// Payload per Resend
 		const emailPayload = {
-			from: 'Meraki Candidature <noreply@merakilainate.it>',
-			to: ['gmar.scio@gmail.com'], // TEST - poi sarà info@merakilainate.it
-			subject: `Nuova Candidatura: ${nome} ${cognome}`,
+			from: 'Meraki Candidature <onboarding@resend.dev>', // Dominio gratuito Resend
+			to: [EMAIL_DESTINATARIO],
+			reply_to: email, // Risposta diretta al candidato
+			subject: `🧑‍💼 Nuova Candidatura: ${nome} ${cognome}`,
 			html: emailHTML,
 			attachments: [
 				{
 					filename: cv_filename,
-					content: cv_base64,
-					type: cv_mimetype,
-					disposition: 'attachment'
+					content: cv_base64 // Resend accetta base64 direttamente
 				}
 			]
 		};
 
-		// Per ora simulo l'invio (sostituire con servizio email reale)
-		console.log('Email payload preparato:', {
-			to: emailPayload.to,
-			subject: emailPayload.subject,
-			attachmentName: cv_filename,
-			attachmentSize: cv_base64.length
+		// Invio email tramite Resend
+		const emailResponse = await fetch('https://api.resend.com/emails', {
+			method: 'POST',
+			headers: {
+				'Authorization': `Bearer ${RESEND_API_KEY}`,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(emailPayload)
 		});
 
-		// TODO: Integrare servizio email reale (Resend, SendGrid, etc.)
-		// const emailResponse = await fetch('https://api.resend.com/emails', {
-		//   method: 'POST',
-		//   headers: {
-		//     'Authorization': `Bearer ${RESEND_API_KEY}`,
-		//     'Content-Type': 'application/json'
-		//   },
-		//   body: JSON.stringify(emailPayload)
-		// });
+		const emailResult = await emailResponse.json();
 
-		// Simula successo per ora
-		await new Promise(resolve => setTimeout(resolve, 1000));
+		if (!emailResponse.ok) {
+			console.error('Errore Resend:', emailResult);
+			return json({ 
+				error: 'Errore invio email: ' + (emailResult.message || 'Errore sconosciuto')
+			}, { status: 500 });
+		}
+
+		console.log('Email inviata con successo:', {
+			id: emailResult.id,
+			to: EMAIL_DESTINATARIO,
+			subject: emailPayload.subject
+		});
 
 		return json({ 
 			success: true, 
-			message: 'Candidatura inviata con successo' 
+			message: 'Candidatura inviata con successo',
+			emailId: emailResult.id
 		});
 
 	} catch (error) {
