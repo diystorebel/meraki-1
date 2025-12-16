@@ -329,33 +329,28 @@
 							transition:fade={{ duration: 200 }}
 						>
 							<div class="item-header">
-								<div class="item-title-row">
-									<h3 class="item-name">{item.name}</h3>
-									{#if item.pricing.type === 'single'}
-										<span class="item-price-inline">€ {item.pricing.value.toFixed(2)}</span>
-									{/if}
-								</div>
+								<h3 class="item-name">{item.name}</h3>
 								{#if item.description}
 									<p class="item-description">{item.description}</p>
 								{/if}
 							</div>
-							{#if item.pricing.type === 'multiple' || item.note}
-								<div class="item-footer">
-									{#if item.pricing.type === 'multiple'}
-										<div class="sizes">
-											{#each item.pricing.variants as variant}
-												<div class="size-badge">
-													<span class="size-name">{variant.name}</span>
-													<span class="size-price">€ {variant.price.toFixed(2)}</span>
-												</div>
-											{/each}
-										</div>
-									{/if}
-									{#if item.note}
-										<div class="item-note">{item.note}</div>
-									{/if}
-								</div>
-							{/if}
+							<div class="item-footer">
+								{#if item.pricing.type === 'multiple'}
+									<div class="sizes">
+										{#each item.pricing.variants as variant}
+											<div class="size-badge">
+												<span class="size-name">{variant.name}</span>
+												<span class="size-price">€ {variant.price.toFixed(2)}</span>
+											</div>
+										{/each}
+									</div>
+								{:else if item.pricing.type === 'single'}
+									<div class="item-price">€ {item.pricing.value.toFixed(2)}</div>
+								{/if}
+								{#if item.note}
+									<div class="item-note">{item.note}</div>
+								{/if}
+							</div>
 						</div>
 					{/if}
 					{/each}
@@ -449,10 +444,10 @@
 	}
 
 	.logo {
-		font-family: 'Playfair Display', serif;
-		font-size: 1.2rem;
-		font-weight: 700;
-		letter-spacing: 0.1em;
+		font-family: 'Bebas Neue', sans-serif;
+		font-size: 1.5rem;
+		font-weight: 400;
+		letter-spacing: 0.15em;
 		color: var(--verde-meraki);
 		text-decoration: none;
 		white-space: nowrap;
@@ -460,7 +455,7 @@
 
 	@media (min-width: 768px) {
 		.logo {
-			font-size: 2rem;
+			font-size: 2.4rem;
 			letter-spacing: 0.2em;
 		}
 	}
@@ -721,39 +716,34 @@
 		margin-top: 0.6rem;
 	}
 
-	/* Subcategories Row - scrolling orizzontale come categories */
+	/* Subcategories Row - SEMPRE scrolling orizzontale su UNA RIGA */
 	.subcategories-row {
 		display: flex;
-		gap: 0.4rem;
+		gap: 0.5rem;
 		overflow-x: auto;
 		-webkit-overflow-scrolling: touch;
 		scrollbar-width: none;
 		align-items: center;
-		padding-right: 10px;
+		padding-right: 20px;
+		flex-wrap: nowrap !important;
 	}
 
 	.subcategories-row::-webkit-scrollbar {
 		display: none;
 	}
 
-	@media (min-width: 768px) {
-		.subcategories-row {
-			flex-wrap: wrap;
-			overflow-x: visible;
-			padding-right: 0;
-		}
-	}
-
 	.subcat-btn {
-		padding: 0.4rem 0.9rem;
-		border: 1px solid var(--verde-light);
+		padding: 0.45rem 0.9rem;
+		border: 1.5px solid var(--verde-light);
 		background: transparent;
 		color: var(--verde-meraki);
-		border-radius: 15px;
-		font-weight: 500;
-		font-size: 0.95rem;
+		border-radius: 18px;
+		font-weight: 600;
+		font-size: 0.85rem;
 		cursor: pointer;
 		transition: all 0.2s;
+		white-space: nowrap;
+		flex-shrink: 0;
 	}
 
 	.subcat-btn:hover {
@@ -917,6 +907,7 @@
 		color: var(--bianco);
 		text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 		margin-left: auto;
+		font-size: 1rem;
 	}
 
 	.premium-footer .sizes {
@@ -925,10 +916,12 @@
 
 	.premium-footer .size-name {
 		color: rgba(255, 255, 255, 0.75);
+		font-size: 0.75rem;
 	}
 
 	.premium-footer .size-price {
 		color: var(--bianco);
+		font-size: 0.95rem;
 	}
 
 	@media (min-width: 768px) {
@@ -948,32 +941,6 @@
 		z-index: 1;
 	}
 
-	/* Titolo e prezzo inline per card normali */
-	.item-title-row {
-		display: flex;
-		justify-content: space-between;
-		align-items: flex-start;
-		gap: 1rem;
-	}
-
-	.item-title-row .item-name {
-		flex: 1;
-		margin-bottom: 0.3rem;
-	}
-
-	.item-price-inline {
-		font-size: 1.3rem;
-		font-weight: 700;
-		color: var(--verde-meraki);
-		white-space: nowrap;
-		flex-shrink: 0;
-	}
-
-	@media (min-width: 768px) {
-		.item-price-inline {
-			font-size: 1.5rem;
-		}
-	}
 
 	.click-badge {
 		display: inline-flex;
@@ -1004,15 +971,13 @@
 	}
 
 	.item-name {
+		font-family: 'Bebas Neue', sans-serif;
 		font-size: 1.4rem;
-		font-weight: 700;
-		color: var(--nero);
-		margin-bottom: 0.5rem;
-		text-transform: lowercase;
-	}
-
-	.item-name::first-letter {
+		font-weight: 400;
+		color: var(--verde-meraki);
+		margin-bottom: 0.4rem;
 		text-transform: uppercase;
+		letter-spacing: 0.04em;
 	}
 
 	@media (min-width: 768px) {
@@ -1022,14 +987,18 @@
 	}
 
 	.item-description {
-		font-size: 1rem;
-		color: var(--grigio-scuro);
+		font-family: 'DM Sans', sans-serif;
+		font-size: 0.9rem;
+		font-weight: 400;
+		color: #777;
 		line-height: 1.5;
+		font-style: italic;
+		letter-spacing: 0.01em;
 	}
 
 	@media (min-width: 768px) {
 		.item-description {
-			font-size: 1.1rem;
+			font-size: 0.95rem;
 		}
 	}
 
@@ -1041,15 +1010,16 @@
 	}
 
 	.item-price {
-		font-size: 1.5rem;
-		font-weight: 700;
+		font-family: 'DM Sans', sans-serif;
+		font-size: 1.1rem;
+		font-weight: 600;
 		color: var(--verde-meraki);
 		text-align: right;
 	}
 
 	@media (min-width: 768px) {
 		.item-price {
-			font-size: 1.7rem;
+			font-size: 1.2rem;
 		}
 	}
 
@@ -1067,24 +1037,27 @@
 	}
 
 	.size-name {
-		font-size: 0.95rem;
-		color: var(--grigio-scuro);
+		font-family: 'DM Sans', sans-serif;
+		font-size: 0.8rem;
+		color: #888;
 		font-weight: 500;
+		text-transform: capitalize;
 	}
 
 	.size-price {
-		font-size: 1.15rem;
-		font-weight: 700;
+		font-family: 'DM Sans', sans-serif;
+		font-size: 1rem;
+		font-weight: 600;
 		color: var(--verde-meraki);
 	}
 
 	@media (min-width: 768px) {
 		.size-name {
-			font-size: 1.05rem;
+			font-size: 0.85rem;
 		}
 
 		.size-price {
-			font-size: 1.3rem;
+			font-size: 1.05rem;
 		}
 	}
 
