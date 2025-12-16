@@ -6,6 +6,8 @@
 	import { loadMenu } from '$lib/stores/menuStore';
 	import '../app.css';
 
+	let contentReady = false;
+
 	// Initialize auth and load data on app start (only in browser)
 	onMount(async () => {
 		if (browser) {
@@ -17,20 +19,38 @@
 				console.error('Error initializing app:', error);
 			}
 		}
+		// Mostra il footer solo dopo che il layout è montato
+		contentReady = true;
 	});
 </script>
 
-<slot />
+<div class="layout-wrapper">
+	<main class="layout-main">
+		<slot />
+	</main>
 
-<footer class="powered-footer">
-	<p>
-		powered by <strong>One2One</strong> di Giovanni Marascio — 
-		<a href="https://www.one2one.it" target="_blank" rel="noopener">www.one2one.it</a>
-		<span class="tagline">Digital Food & Beverage</span>
-	</p>
-</footer>
+	{#if contentReady}
+		<footer class="powered-footer">
+			<p>
+				powered by <strong>One2One</strong> di Giovanni Marascio — 
+				<a href="https://www.one2one.it" target="_blank" rel="noopener">www.one2one.it</a>
+				<span class="tagline">Digital Food & Beverage</span>
+			</p>
+		</footer>
+	{/if}
+</div>
 
 <style>
+	.layout-wrapper {
+		display: flex;
+		flex-direction: column;
+		min-height: 100vh;
+	}
+
+	.layout-main {
+		flex: 1;
+	}
+
 	.powered-footer {
 		background: #1a1a1a;
 		padding: 1rem;
