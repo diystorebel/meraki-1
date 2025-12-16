@@ -169,13 +169,11 @@
 	/* Dashboard - MOBILE FIRST */
 	.dashboard {
 		min-height: 100vh;
-		max-height: 100vh;
 		background: var(--grigio-chiaro);
 		padding: 1.5rem 1rem 1rem;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		overflow: hidden; /* BLOCCA SCROLL */
 	}
 
 	/* Logo */

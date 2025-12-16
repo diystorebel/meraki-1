@@ -3,7 +3,8 @@
 	import { categoriesStore, getSubcategoriesForCategory } from '$lib/stores/categoriesStore.js';
 	import { menuStore } from '$lib/stores/menuStore.js';
 	import { loadEventiAttivi } from '$lib/stores/eventiStore.js';
-	import { fade } from 'svelte/transition';
+	import { smartSearch } from '$lib/utils/smartSearch.js';
+	import { fade, fly } from 'svelte/transition';
 	import { X, Search, MousePointerClick, Home, Calendar, Clock, Sparkles, Phone } from 'lucide-svelte';
 
 	let eventiAttivi = [];
@@ -38,6 +39,15 @@
 	let selectedSubcategory = null;
 	let searchTerm = '';
 	let selectedProduct = null;
+	let searchExpanded = false;
+	let showScrollHint = true;
+
+	function handleCategoriesScroll(e) {
+		const el = e.target;
+		const scrollEnd = el.scrollWidth - el.clientWidth;
+		// Nascondi la freccia se siamo quasi alla fine
+		showScrollHint = el.scrollLeft < scrollEnd - 10;
+	}
 
 	$: subcategories = selectedCategory ? getSubcategoriesForCategory($categoriesStore, selectedCategory) : [];
 	
@@ -47,17 +57,24 @@
 		return cat ? cat.name : '';
 	}
 
-	$: filteredItems = $menuStore.filter(item => {
-		const matchesSearch = searchTerm === '' || 
-			item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			(item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()));
+	// Smart Search: usa ricerca semantica con sinonimi e word boundaries
+	$: filteredItems = (() => {
+		// Filtra solo items disponibili
+		const availableItems = $menuStore.filter(item => item.is_available);
 		
-		const itemCategoryName = getCategoryName(item.category_id);
-		const matchesCategory = !selectedCategory || itemCategoryName === selectedCategory;
-		const matchesSubcategory = !selectedSubcategory || item.subcategory === selectedSubcategory;
+		// Se c'è una ricerca attiva, usa smart search (ignora categoria/sottocategoria)
+		if (searchTerm && searchTerm.trim() !== '') {
+			return smartSearch(availableItems, searchTerm);
+		}
 		
-		return matchesSearch && matchesCategory && matchesSubcategory && item.is_available;
-	});
+		// Altrimenti filtra per categoria/sottocategoria
+		return availableItems.filter(item => {
+			const itemCategoryName = getCategoryName(item.category_id);
+			const matchesCategory = !selectedCategory || itemCategoryName === selectedCategory;
+			const matchesSubcategory = !selectedSubcategory || item.subcategory === selectedSubcategory;
+			return matchesCategory && matchesSubcategory;
+		});
+	})();
 
 	function openProductDetail(product) {
 		if (product.image_url) {
@@ -87,6 +104,14 @@
 		selectedCategory = null;
 		selectedSubcategory = null;
 		searchTerm = '';
+		searchExpanded = false;
+	}
+
+	function toggleSearch() {
+		searchExpanded = !searchExpanded;
+		if (!searchExpanded) {
+			searchTerm = '';
+		}
 	}
 </script>
 
@@ -189,51 +214,58 @@
 	<!-- Filters -->
 	<div class="filters-section">
 		<div class="container">
-			<!-- Search -->
-			<div class="search-box">
-				<svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<circle cx="11" cy="11" r="8"/>
-					<path d="m21 21-4.35-4.35"/>
-				</svg>
-				<input 
-					type="text" 
-					placeholder="Cerca nel menu..." 
-					bind:value={searchTerm}
-					class="search-input"
-				/>
-				{#if searchTerm}
-					<button class="clear-btn" on:click={() => searchTerm = ''}>
-						<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-							<path d="M18 6L6 18M6 6l12 12"/>
-						</svg>
+			<!-- Search espanso OPPURE Categories -->
+			{#if searchExpanded || searchTerm}
+				<!-- Modalità ricerca: barra full width -->
+				<div class="search-expanded">
+					<Search size={18} class="search-icon-static" />
+					<input 
+						type="text" 
+						placeholder="Cerca nel menu..." 
+						bind:value={searchTerm}
+						class="search-input-full"
+						autofocus
+					/>
+					<button class="search-close-btn" on:click={() => { searchTerm = ''; searchExpanded = false; }}>
+						<X size={18} />
 					</button>
-				{/if}
-			</div>
+				</div>
+			{:else}
+				<!-- Modalità normale: chips categorie -->
+				<div class="categories-container">
+					<div class="categories-row" on:scroll={handleCategoriesScroll}>
+						<button class="search-btn" on:click={toggleSearch}>
+							<Search size={18} />
+						</button>
+						
+						{#each categories as cat}
+							<button 
+								class="cat-btn"
+								class:active={selectedCategory === cat}
+								on:click={() => selectCategory(cat)}
+							>
+								{cat}
+							</button>
+						{/each}
+						
+						{#if selectedCategory || selectedSubcategory}
+							<button class="reset-btn" on:click={clearFilters}>
+								<X size={14} />
+							</button>
+						{/if}
+					</div>
+					{#if showScrollHint}
+						<div class="scroll-hint" transition:fade={{ duration: 200 }}>›</div>
+					{/if}
+				</div>
+			{/if}
 
-			<!-- Category Pills -->
-			<div class="categories">
-				{#each categories as cat}
-					<button 
-						class="category-pill"
-						class:active={selectedCategory === cat}
-						on:click={() => selectCategory(cat)}
-					>
-						{cat}
-					</button>
-				{/each}
-				{#if selectedCategory || selectedSubcategory || searchTerm}
-					<button class="category-pill reset" on:click={clearFilters}>
-						✕ Reset
-					</button>
-				{/if}
-			</div>
-
-			<!-- Subcategories -->
-			{#if subcategories.length > 0}
-				<div class="subcategories" transition:fade={{ duration: 200 }}>
+			<!-- Subcategories (nascoste durante la ricerca) -->
+			{#if selectedCategory && subcategories.length > 0 && !searchExpanded && !searchTerm}
+				<div class="subcategories-row" transition:fade={{ duration: 150 }}>
 					{#each subcategories as subcat}
 						<button 
-							class="subcategory-pill"
+							class="subcat-btn"
 							class:active={selectedSubcategory === subcat}
 							on:click={() => selectSubcategory(subcat)}
 						>
@@ -242,11 +274,6 @@
 					{/each}
 				</div>
 			{/if}
-
-			<!-- Results Count -->
-			<div class="results-count">
-				{filteredItems.length} {filteredItems.length === 1 ? 'prodotto' : 'prodotti'}
-			</div>
 		</div>
 	</div>
 
@@ -256,21 +283,50 @@
 			{#if filteredItems.length > 0}
 				<div class="items-grid">
 					{#each filteredItems as item (item.id)}
+					{#if item.image_url}
+						<!-- Card CON FOTO - Layout premium con immagine sfondo -->
+						<div 
+							class="menu-item menu-item-premium" 
+							on:click={() => openProductDetail(item)}
+							transition:fade={{ duration: 200 }}
+						>
+							<!-- Immagine di sfondo -->
+							<div class="premium-bg">
+								<img src={item.image_url} alt={item.name} loading="lazy" />
+								<div class="premium-overlay"></div>
+							</div>
+							
+							<!-- Contenuto sopra l'immagine -->
+							<div class="premium-content">
+								<h3 class="item-name">{item.name}</h3>
+								{#if item.description}
+									<p class="item-description">{item.description}</p>
+								{/if}
+								
+								<div class="premium-footer">
+									<span class="click-badge">+ Info</span>
+									{#if item.pricing.type === 'multiple'}
+										<div class="sizes">
+											{#each item.pricing.variants as variant}
+												<div class="size-badge">
+													<span class="size-name">{variant.name}</span>
+													<span class="size-price">€ {variant.price.toFixed(2)}</span>
+												</div>
+											{/each}
+										</div>
+									{:else if item.pricing.type === 'single'}
+										<div class="item-price">€ {item.pricing.value.toFixed(2)}</div>
+									{/if}
+								</div>
+							</div>
+						</div>
+					{:else}
+						<!-- Card SENZA FOTO - Layout standard -->
 						<div 
 							class="menu-item" 
-							class:clickable={item.image_url}
-							on:click={() => item.image_url && openProductDetail(item)}
 							transition:fade={{ duration: 200 }}
 						>
 							<div class="item-header">
-							<div class="header-top">
-								<span class="item-category">{item.subcategory || getCategoryName(item.category_id)}</span>
-								{#if item.image_url}
-									<span class="click-badge" title="👆 Clicca per vedere dettagli">
-										+ Info
-									</span>
-								{/if}
-							</div>
 								<h3 class="item-name">{item.name}</h3>
 								{#if item.description}
 									<p class="item-description">{item.description}</p>
@@ -294,6 +350,7 @@
 								{/if}
 							</div>
 						</div>
+					{/if}
 					{/each}
 				</div>
 			{:else}
@@ -312,44 +369,35 @@
 
 	<!-- Product Detail Modal -->
 	{#if selectedProduct}
-		<div class="modal-overlay" on:click={closeDetail} transition:fade={{ duration: 200 }}>
+		<div class="modal-overlay" on:click={closeDetail} transition:fade={{ duration: 250 }}>
 			<div class="modal-detail" on:click|stopPropagation>
+				<!-- Header con immagine hero -->
+				<div class="modal-hero">
+					{#if selectedProduct.image_url}
+						<img src={selectedProduct.image_url} alt={selectedProduct.name} class="hero-img" />
+					{/if}
+					<div class="hero-gradient"></div>
+					
+				<!-- Close button -->
 				<button class="close-modal" on:click={closeDetail}>
-					<X size={24} />
+					<X size={20} />
 				</button>
-				
-				{#if selectedProduct.image_url}
-					<div class="modal-image">
-						<img src={selectedProduct.image_url} alt={selectedProduct.name} />
-					</div>
-				{/if}
+				</div>
 
-				<div class="modal-content">
-					<span class="modal-category">{selectedProduct.subcategory || getCategoryName(selectedProduct.category_id)}</span>
-					<h2>{selectedProduct.name}</h2>
-
-					{#if selectedProduct.detailed_description}
-						<p class="modal-description">{selectedProduct.detailed_description}</p>
-					{/if}
-
-					{#if selectedProduct.description}
-						<p class="modal-ingredients">Ingredienti: {selectedProduct.description}</p>
-					{/if}
-
-					<div class="modal-price">
-						{#if selectedProduct.pricing.type === 'multiple'}
-							<div class="sizes-list">
-								{#each selectedProduct.pricing.variants as variant}
-									<div class="size-item">
-										<span>{variant.name}</span>
-										<span class="price">€ {variant.price.toFixed(2)}</span>
-									</div>
-								{/each}
-							</div>
-						{:else if selectedProduct.pricing.type === 'single'}
-							<span class="price-large">€ {selectedProduct.pricing.value.toFixed(2)}</span>
+				<!-- Content -->
+				<div class="modal-body">
+					<div class="modal-header">
+						<h2>{selectedProduct.name}</h2>
+						{#if selectedProduct.description}
+							<p class="ingredients">{selectedProduct.description}</p>
 						{/if}
 					</div>
+
+					{#if selectedProduct.detailed_description}
+						<div class="description-block">
+							<p>{selectedProduct.detailed_description}</p>
+						</div>
+					{/if}
 				</div>
 			</div>
 		</div>
@@ -361,8 +409,8 @@
 		min-height: 100vh;
 		background: var(--bianco);
 		width: 100%;
-		max-width: 100vw;
-		overflow-x: hidden;
+		max-width: 100%;
+		overflow-x: clip;
 	}
 
 	/* Header - Mobile First */
@@ -462,6 +510,7 @@
 		padding: 1.5rem 0;
 		border-bottom: 2px solid var(--grigio);
 		width: 100%;
+		overflow: hidden;
 	}
 
 	@media (min-width: 768px) {
@@ -484,151 +533,207 @@
 		}
 	}
 
-	.search-box {
-		position: relative;
-		max-width: 600px;
-		margin: 0 auto 1.2rem;
-		width: 100%;
-	}
-
-	@media (min-width: 768px) {
-		.search-box {
-			margin-bottom: 1.5rem;
-		}
-	}
-
-	.search-icon {
-		position: absolute;
-		left: 1rem;
-		top: 50%;
-		transform: translateY(-50%);
-		color: var(--grigio-scuro);
-	}
-
-	@media (min-width: 768px) {
-		.search-icon {
-			left: 1.2rem;
-		}
-	}
-
-	.search-input {
-		width: 100%;
-		padding: 0.9rem 2.5rem;
-		border: 2px solid var(--grigio);
-		border-radius: 50px;
-		font-size: 0.95rem;
-		background: var(--bianco);
-		transition: all 0.3s ease;
-	}
-
-	@media (min-width: 768px) {
-		.search-input {
-			padding: 1rem 3rem;
-			font-size: 1rem;
-		}
-	}
-
-	.search-input:focus {
-		outline: none;
-		border-color: var(--verde-meraki);
-		box-shadow: 0 0 0 3px rgba(21, 67, 21, 0.1);
-	}
-
-	.clear-btn {
-		position: absolute;
-		right: 1rem;
-		top: 50%;
-		transform: translateY(-50%);
-		background: none;
-		border: none;
-		color: var(--grigio-scuro);
-		cursor: pointer;
-		padding: 0.5rem;
-		border-radius: 50%;
+	/* Search Expanded - Full width, stessa altezza del bottone */
+	.search-expanded {
 		display: flex;
 		align-items: center;
-		transition: all 0.3s ease;
-	}
-
-	.clear-btn:hover {
-		background: var(--grigio);
-		color: var(--nero);
-	}
-
-	/* Categories - Mobile First */
-	.categories, .subcategories {
-		display: flex;
-		gap: 0.6rem;
-		overflow-x: auto;
-		padding-bottom: 0.5rem;
-		margin-bottom: 1rem;
-		-webkit-overflow-scrolling: touch;
-		scrollbar-width: thin;
-	}
-
-	@media (min-width: 768px) {
-		.categories, .subcategories {
-			gap: 0.8rem;
-			flex-wrap: wrap;
-			justify-content: center;
-			overflow-x: visible;
-		}
-	}
-
-	.category-pill, .subcategory-pill {
-		padding: 0.7rem 1.2rem;
-		border: 2px solid var(--verde-meraki);
+		gap: 0.5rem;
 		background: var(--bianco);
+		border: 1.5px solid var(--verde-meraki);
+		border-radius: 20px;
+		padding: 0 0.8rem;
+		height: 38px;
+		width: 100%;
+	}
+
+	.search-expanded :global(.search-icon-static) {
 		color: var(--verde-meraki);
-		border-radius: 50px;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.3s ease;
-		white-space: nowrap;
-		font-size: 0.85rem;
 		flex-shrink: 0;
 	}
 
-	@media (min-width: 768px) {
-		.category-pill, .subcategory-pill {
-			padding: 0.8rem 1.5rem;
-			font-size: 1rem;
-		}
-
-		.category-pill:hover, .subcategory-pill:hover {
-			background: var(--verde-light);
-			color: var(--bianco);
-			transform: translateY(-2px);
-			box-shadow: 0 4px 12px rgba(21, 67, 21, 0.2);
-		}
+	.search-input-full {
+		flex: 1;
+		border: none;
+		background: transparent;
+		font-size: 0.9rem;
+		outline: none;
+		padding: 0;
 	}
 
-	.category-pill.active, .subcategory-pill.active {
+	.search-close-btn {
+		width: 26px;
+		height: 26px;
+		border: none;
+		background: var(--grigio-chiaro);
+		color: var(--grigio-scuro);
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		transition: all 0.2s;
+		flex-shrink: 0;
+	}
+
+	.search-close-btn:hover {
 		background: var(--verde-meraki);
 		color: var(--bianco);
 	}
 
-	.category-pill.reset {
-		border-color: var(--grigio-scuro);
-		color: var(--grigio-scuro);
+	/* Categories Container */
+	.categories-container {
+		position: relative;
+		width: 100%;
+		overflow: hidden;
 	}
 
-	.category-pill.reset:hover {
-		background: var(--grigio-scuro);
+	/* Categories Row */
+	.categories-row {
+		display: flex;
+		gap: 0.5rem;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+		align-items: center;
+		padding-right: 25px;
+	}
+
+	.categories-row::-webkit-scrollbar {
+		display: none;
+	}
+
+	/* Scroll Hint - freccia animata */
+	.scroll-hint {
+		position: absolute;
+		right: 4px;
+		top: 50%;
+		transform: translateY(-50%);
+		font-size: 1.4rem;
+		font-weight: 700;
+		color: var(--verde-meraki);
+		animation: bounceRight 1.5s ease-in-out infinite;
+		pointer-events: none;
+	}
+
+	@keyframes bounceRight {
+		0%, 100% { transform: translateY(-50%) translateX(0); opacity: 1; }
+		50% { transform: translateY(-50%) translateX(-4px); opacity: 0.6; }
+	}
+
+	@media (min-width: 768px) {
+		.categories-row {
+			flex-wrap: wrap;
+			overflow-x: visible;
+			padding-right: 0;
+		}
+
+		.scroll-hint {
+			display: none;
+		}
+	}
+
+	/* Search Button (chip) */
+	.search-btn {
+		width: 38px;
+		height: 38px;
+		border: 1.5px solid var(--verde-meraki);
+		background: var(--bianco);
+		color: var(--verde-meraki);
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		transition: all 0.2s;
+		flex-shrink: 0;
+	}
+
+	.search-btn:hover {
+		background: var(--verde-meraki);
 		color: var(--bianco);
 	}
 
-	.results-count {
-		text-align: center;
+	.cat-btn {
+		padding: 0.5rem 1rem;
+		border: 1.5px solid var(--verde-meraki);
+		background: var(--bianco);
+		color: var(--verde-meraki);
+		border-radius: 20px;
+		font-weight: 600;
+		font-size: 0.85rem;
+		cursor: pointer;
+		transition: all 0.2s;
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+
+	.cat-btn:hover {
+		background: var(--verde-light);
+		color: var(--bianco);
+	}
+
+	.cat-btn.active {
+		background: var(--verde-meraki);
+		color: var(--bianco);
+	}
+
+	/* Reset button inline */
+	.reset-btn {
+		width: 32px;
+		height: 32px;
+		border: 1.5px solid var(--grigio);
+		background: var(--bianco);
 		color: var(--grigio-scuro);
-		font-size: 0.9rem;
-		margin-top: 1rem;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		transition: all 0.2s;
+		flex-shrink: 0;
+	}
+
+	.reset-btn:hover {
+		border-color: #c00;
+		background: #fee;
+		color: #c00;
+	}
+
+	/* Subcategories Row - parte da sotto la lente */
+	.subcategories-row {
+		display: flex;
+		gap: 0.4rem;
+		flex-wrap: wrap;
+		margin-top: 0.6rem;
+	}
+
+	.subcat-btn {
+		padding: 0.3rem 0.7rem;
+		border: 1px solid var(--verde-light);
+		background: transparent;
+		color: var(--verde-meraki);
+		border-radius: 15px;
+		font-weight: 500;
+		font-size: 0.75rem;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.subcat-btn:hover {
+		background: var(--verde-light);
+		color: var(--bianco);
+	}
+
+	.subcat-btn.active {
+		background: var(--verde-light);
+		color: var(--bianco);
 	}
 
 	/* Menu Items - Mobile First */
 	.menu-items {
 		padding: 2rem 0 3rem;
 		width: 100%;
+		overflow-x: hidden;
 	}
 
 	@media (min-width: 768px) {
@@ -656,6 +761,7 @@
 		}
 	}
 
+	/* ========== CARD STANDARD (senza foto) ========== */
 	.menu-item {
 		background: var(--bianco);
 		border: 2px solid var(--grigio);
@@ -665,6 +771,8 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
+		position: relative;
+		overflow: hidden;
 	}
 
 	@media (min-width: 768px) {
@@ -679,35 +787,128 @@
 		}
 	}
 
-	.menu-item.clickable {
+	/* ========== CARD PREMIUM (con foto sfondo) ========== */
+	.menu-item-premium {
+		min-height: 180px;
 		cursor: pointer;
+		border: none;
+		padding: 0;
+		background: transparent;
 	}
 
-	.menu-item.clickable:hover {
-		border-color: var(--verde-light);
+	.menu-item-premium:hover {
+		transform: translateY(-8px) scale(1.01);
+		box-shadow: 0 16px 40px rgba(21, 67, 21, 0.25);
+	}
+
+	/* Immagine di sfondo */
+	.premium-bg {
+		position: absolute;
+		inset: 0;
+		border-radius: 16px;
+		overflow: hidden;
+	}
+
+	.premium-bg img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		transition: transform 0.7s ease;
+	}
+
+	.menu-item-premium:hover .premium-bg img {
+		transform: scale(1.08);
+	}
+
+	/* Overlay gradient scuro */
+	.premium-overlay {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(
+			to right,
+			rgba(21, 67, 21, 0.95) 0%,
+			rgba(21, 67, 21, 0.85) 35%,
+			rgba(21, 67, 21, 0.70) 60%,
+			rgba(21, 67, 21, 0.3) 100%
+		);
+	}
+
+	/* Contenuto sopra l'immagine */
+	.premium-content {
+		position: relative;
+		z-index: 2;
+		padding: 1.5rem;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		min-height: 180px;
+	}
+
+	.premium-content .item-name {
+		color: var(--bianco);
+		text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.5);
+	}
+
+	.premium-content .item-description {
+		color: var(--bianco);
+		flex: 1;
+		text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.5);
+		line-height: 1.6;
+		font-weight: 400;
+	}
+
+	/* Footer della card premium */
+	.premium-footer {
+		margin-top: auto;
+		padding-top: 1rem;
+		border-top: 1px solid rgba(255, 255, 255, 0.2);
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	.premium-footer .click-badge {
+		background: var(--bianco);
+		color: var(--verde-meraki);
+		border: none;
+		font-weight: 800;
+		flex-shrink: 0;
+	}
+
+	.premium-footer .item-price {
+		color: var(--bianco);
+		text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+		margin-left: auto;
+	}
+
+	.premium-footer .sizes {
+		margin-left: auto;
+	}
+
+	.premium-footer .size-name {
+		color: rgba(255, 255, 255, 0.75);
+	}
+
+	.premium-footer .size-price {
+		color: var(--bianco);
+	}
+
+	@media (min-width: 768px) {
+		.premium-content {
+			padding: 2rem;
+			min-height: 200px;
+		}
+
+		.menu-item-premium {
+			min-height: 200px;
+		}
 	}
 
 	.item-header {
 		flex: 1;
-	}
-
-	.header-top {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 0.8rem;
-	}
-
-	.item-category {
-		display: inline-block;
-		padding: 0.3rem 0.8rem;
-		background: var(--verde-meraki);
-		color: var(--bianco);
-		border-radius: 20px;
-		font-size: 0.75rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
+		position: relative;
+		z-index: 1;
 	}
 
 	.click-badge {
@@ -743,6 +944,11 @@
 		font-weight: 700;
 		color: var(--nero);
 		margin-bottom: 0.5rem;
+		text-transform: lowercase;
+	}
+
+	.item-name::first-letter {
+		text-transform: uppercase;
 	}
 
 	@media (min-width: 768px) {
@@ -766,10 +972,12 @@
 	.item-footer {
 		border-top: 1px solid var(--grigio);
 		padding-top: 1rem;
+		position: relative;
+		z-index: 1;
 	}
 
 	.item-price {
-		font-size: 1.6rem;
+		font-size: 1.3rem;
 		font-weight: 700;
 		color: var(--verde-meraki);
 		text-align: right;
@@ -777,44 +985,43 @@
 
 	@media (min-width: 768px) {
 		.item-price {
-			font-size: 2rem;
+			font-size: 1.5rem;
 		}
 	}
 
 	.sizes {
 		display: flex;
-		gap: 0.6rem;
-		flex-wrap: wrap;
-	}
-
-	@media (min-width: 768px) {
-		.sizes {
-			gap: 0.8rem;
-		}
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.25rem;
 	}
 
 	.size-badge {
 		display: flex;
-		flex-direction: column;
-		align-items: center;
-		padding: 0.6rem 1rem;
-		background: var(--grigio-chiaro);
-		border: 1px solid var(--grigio);
-		border-radius: 12px;
-		gap: 0.2rem;
+		align-items: baseline;
+		gap: 0.5rem;
 	}
 
 	.size-name {
-		font-size: 0.75rem;
+		font-size: 0.8rem;
 		color: var(--grigio-scuro);
-		text-transform: uppercase;
-		font-weight: 600;
+		font-weight: 500;
 	}
 
 	.size-price {
-		font-size: 1.1rem;
+		font-size: 1rem;
 		font-weight: 700;
 		color: var(--verde-meraki);
+	}
+
+	@media (min-width: 768px) {
+		.size-name {
+			font-size: 0.85rem;
+		}
+
+		.size-price {
+			font-size: 1.1rem;
+		}
 	}
 
 	.item-note {
@@ -865,147 +1072,190 @@
 		transform: translateY(-2px);
 	}
 
-	/* Product Detail Modal */
+	/* Product Detail Modal - Redesigned */
 	.modal-overlay {
 		position: fixed;
 		inset: 0;
-		background: rgba(0, 0, 0, 0.9);
+		background: rgba(10, 10, 10, 0.85);
+		backdrop-filter: blur(8px);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		z-index: 10000;
-		padding: 1rem;
+		padding: 1.5rem;
 		overflow-y: auto;
 	}
 
 	.modal-detail {
-		background: var(--bianco);
-		border-radius: 16px;
-		max-width: 600px;
+		background: #fafaf8;
+		border-radius: 24px;
+		max-width: 420px;
 		width: 100%;
-		max-height: 90vh;
-		overflow-y: auto;
+		max-height: 85vh;
+		overflow: hidden;
 		position: relative;
+		box-shadow: 
+			0 0 0 1px rgba(255, 255, 255, 0.1),
+			0 20px 50px -10px rgba(0, 0, 0, 0.5);
+		animation: modalPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 	}
 
+	@keyframes modalPop {
+		0% {
+			opacity: 0;
+			transform: scale(0.9) translateY(20px);
+		}
+		100% {
+			opacity: 1;
+			transform: scale(1) translateY(0);
+		}
+	}
+
+	/* Hero section con immagine */
+	.modal-hero {
+		position: relative;
+		height: 200px;
+		overflow: hidden;
+		background: linear-gradient(135deg, #1a3a1a 0%, #2d5a2d 100%);
+	}
+
+	.hero-img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		animation: heroZoom 0.6s ease-out;
+	}
+
+	@keyframes heroZoom {
+		from {
+			transform: scale(1.1);
+			opacity: 0;
+		}
+		to {
+			transform: scale(1);
+			opacity: 1;
+		}
+	}
+
+	.hero-gradient {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(
+			to bottom,
+			transparent 0%,
+			transparent 50%,
+			rgba(250, 250, 248, 0.6) 75%,
+			rgba(250, 250, 248, 0.9) 90%,
+			#fafaf8 100%
+		);
+		pointer-events: none;
+	}
+
+	/* Rimuove qualsiasi linea di stacco */
+	.modal-hero::after {
+		content: '';
+		position: absolute;
+		bottom: -1px;
+		left: 0;
+		right: 0;
+		height: 20px;
+		background: linear-gradient(to bottom, transparent, #fafaf8);
+	}
+
+	/* Close button - minimal */
 	.close-modal {
 		position: absolute;
-		top: 1rem;
-		right: 1rem;
-		background: rgba(0, 0, 0, 0.5);
-		color: white;
+		top: 12px;
+		right: 12px;
+		width: 36px;
+		height: 36px;
+		background: rgba(255, 255, 255, 0.9);
 		border: none;
 		border-radius: 50%;
-		width: 40px;
-		height: 40px;
+		color: #333;
 		cursor: pointer;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		z-index: 10;
-		transition: all 0.3s ease;
+		z-index: 20;
+		transition: all 0.2s ease;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 	}
 
 	.close-modal:hover {
-		background: rgba(0, 0, 0, 0.7);
-		transform: rotate(90deg);
+		background: #fff;
+		transform: scale(1.1);
 	}
 
-	.modal-image {
-		width: 100%;
-		height: 300px;
-		overflow: hidden;
-		border-radius: 16px 16px 0 0;
+	/* Body content */
+	.modal-body {
+		padding: 20px 24px 28px;
+		overflow-y: auto;
+		max-height: calc(85vh - 200px);
 	}
 
-	.modal-image img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
+	.modal-header {
+		margin-bottom: 16px;
 	}
 
-	.modal-content {
-		padding: 2rem;
-	}
-
-	.modal-category {
-		display: inline-block;
-		padding: 0.4rem 1rem;
-		background: var(--verde-meraki);
-		color: var(--bianco);
-		border-radius: 20px;
-		font-size: 0.8rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		margin-bottom: 1rem;
-	}
-
-	.modal-content h2 {
-		font-size: 2rem;
-		color: var(--verde-meraki);
-		margin-bottom: 1rem;
-	}
-
-	.modal-description {
-		font-size: 1.1rem;
-		line-height: 1.7;
-		color: var(--nero);
-		margin-bottom: 1.5rem;
-	}
-
-	.modal-ingredients {
-		font-size: 0.95rem;
-		color: var(--grigio-scuro);
-		font-style: italic;
-		margin-bottom: 1.5rem;
-		padding: 1rem;
-		background: var(--grigio-chiaro);
-		border-radius: 8px;
-	}
-
-	.modal-price {
-		border-top: 2px solid var(--grigio);
-		padding-top: 1.5rem;
-	}
-
-	.price-large {
-		font-size: 2.5rem;
-		font-weight: 700;
-		color: var(--verde-meraki);
-	}
-
-	.sizes-list {
-		display: flex;
-		flex-direction: column;
-		gap: 0.8rem;
-	}
-
-	.size-item {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 1rem;
-		background: var(--grigio-chiaro);
-		border-radius: 8px;
-	}
-
-	.size-item .price {
+	.modal-header h2 {
+		font-family: 'Playfair Display', Georgia, serif;
 		font-size: 1.5rem;
-		font-weight: 700;
-		color: var(--verde-meraki);
+		font-weight: 600;
+		color: #1a1a1a;
+		margin: 0 0 8px;
+		line-height: 1.3;
+		text-transform: capitalize;
 	}
 
-	@media (max-width: 768px) {
-		.modal-image {
-			height: 200px;
+	.ingredients {
+		font-size: 0.85rem;
+		color: #666;
+		line-height: 1.5;
+		margin: 0;
+		font-style: italic;
+	}
+
+	/* Description block */
+	.description-block {
+		background: #fff;
+		border-radius: 12px;
+		padding: 16px;
+		margin-bottom: 16px;
+		border: 1px solid rgba(0, 0, 0, 0.06);
+	}
+
+	.description-block p {
+		font-size: 0.9rem;
+		line-height: 1.65;
+		color: #444;
+		margin: 0;
+	}
+
+	/* Mobile adjustments */
+	@media (max-width: 480px) {
+		.modal-overlay {
+			padding: 1rem;
+			align-items: center;
 		}
 
-		.modal-content {
-			padding: 1.5rem;
+		.modal-detail {
+			max-width: 100%;
+			max-height: 85vh;
+			border-radius: 20px;
 		}
 
-		.modal-content h2 {
-			font-size: 1.5rem;
+		.modal-hero {
+			height: 180px;
+		}
+
+		.modal-body {
+			padding: 16px 20px 24px;
+			max-height: calc(85vh - 180px);
+		}
+
+		.modal-header h2 {
+			font-size: 1.35rem;
 		}
 	}
 
