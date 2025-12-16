@@ -395,14 +395,28 @@
 				</button>
 				</div>
 
-				<!-- Content -->
+				<!-- Content - Stile Ricettario -->
 				<div class="modal-body">
-					<h2>{selectedProduct.name}</h2>
+					<!-- Titolo con ornamento -->
+					<div class="recipe-header">
+						<div class="recipe-line"></div>
+						<h2>{selectedProduct.name}</h2>
+						<div class="recipe-line"></div>
+					</div>
+					
+					<!-- Ingredienti -->
 					{#if selectedProduct.description}
-						<p class="ingredients">{selectedProduct.description}</p>
+						<div class="recipe-ingredients">
+							<span class="ingredients-label">Ingredienti</span>
+							<p>{selectedProduct.description}</p>
+						</div>
 					{/if}
+					
+					<!-- Storia / Note -->
 					{#if selectedProduct.detailed_description}
-						<p class="detailed-desc">{selectedProduct.detailed_description}</p>
+						<div class="recipe-story">
+							<p>"{selectedProduct.detailed_description}"</p>
+						</div>
 					{/if}
 				</div>
 			</div>
@@ -1229,38 +1243,105 @@
 		transform: scale(1.1);
 	}
 
-	/* Body content */
+	/* Body content - Stile Ricettario */
 	.modal-body {
-		padding: 20px 24px 28px;
+		padding: 24px 28px 32px;
 		overflow-y: auto;
 		max-height: calc(85vh - 200px);
 	}
 
+	/* Header titolo con linee decorative */
+	.recipe-header {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		margin-bottom: 28px;
+	}
+
+	.recipe-line {
+		flex: 1;
+		height: 1px;
+		background: linear-gradient(
+			to right,
+			transparent,
+			var(--verde-meraki) 20%,
+			var(--verde-meraki) 80%,
+			transparent
+		);
+		opacity: 0.4;
+	}
+
 	.modal-body h2 {
-		font-family: 'Bebas Neue', sans-serif;
-		font-size: 2.4rem;
-		font-weight: 400;
+		font-family: 'Playfair Display', serif;
+		font-size: 1.75rem;
+		font-weight: 600;
 		color: var(--verde-meraki);
-		margin: 0 0 20px;
-		line-height: 1.15;
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-	}
-
-	.modal-body .ingredients {
-		font-size: 1.05rem;
-		color: var(--grigio-scuro);
-		line-height: 1.6;
-		margin: 0 0 24px;
-	}
-
-	.modal-body .detailed-desc {
-		font-size: 1rem;
-		line-height: 1.7;
-		color: #555;
 		margin: 0;
-		padding-top: 20px;
-		border-top: 1px solid var(--grigio);
+		line-height: 1.2;
+		text-align: center;
+		letter-spacing: 0.02em;
+		white-space: nowrap;
+	}
+
+	/* Sezione ingredienti */
+	.recipe-ingredients {
+		text-align: center;
+		margin-bottom: 24px;
+	}
+
+	.ingredients-label {
+		display: inline-block;
+		font-family: 'Playfair Display', serif;
+		font-size: 0.7rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.2em;
+		color: var(--verde-light);
+		margin-bottom: 10px;
+		position: relative;
+	}
+
+	.ingredients-label::before,
+	.ingredients-label::after {
+		content: '·';
+		margin: 0 8px;
+		opacity: 0.6;
+	}
+
+	.recipe-ingredients p {
+		font-size: 1rem;
+		color: var(--grigio-scuro);
+		line-height: 1.7;
+		margin: 0;
+		font-style: italic;
+	}
+
+	/* Storia / Note dello chef */
+	.recipe-story {
+		position: relative;
+		padding: 20px 0 0;
+		margin-top: 8px;
+	}
+
+	.recipe-story::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 40px;
+		height: 1px;
+		background: var(--grigio);
+	}
+
+	.recipe-story p {
+		font-family: 'Playfair Display', serif;
+		font-size: 0.95rem;
+		line-height: 1.8;
+		color: #666;
+		margin: 0;
+		text-align: center;
+		font-style: italic;
 	}
 
 	/* Mobile adjustments */
@@ -1281,12 +1362,26 @@
 		}
 
 		.modal-body {
-			padding: 20px 24px 28px;
+			padding: 20px 20px 28px;
 			max-height: calc(90vh - 300px);
 		}
 
 		.modal-body h2 {
-			font-size: 1.9rem;
+			font-size: 1.5rem;
+			white-space: normal;
+		}
+
+		.recipe-header {
+			gap: 12px;
+			margin-bottom: 24px;
+		}
+
+		.recipe-ingredients p {
+			font-size: 0.95rem;
+		}
+
+		.recipe-story p {
+			font-size: 0.9rem;
 		}
 	}
 
