@@ -262,16 +262,18 @@
 
 			<!-- Subcategories (nascoste durante la ricerca) -->
 			{#if selectedCategory && subcategories.length > 0 && !searchExpanded && !searchTerm}
-				<div class="subcategories-row" transition:fade={{ duration: 150 }}>
-					{#each subcategories as subcat}
-						<button 
-							class="subcat-btn"
-							class:active={selectedSubcategory === subcat}
-							on:click={() => selectSubcategory(subcat)}
-						>
-							{subcat}
-						</button>
-					{/each}
+				<div class="subcategories-container" transition:fade={{ duration: 150 }}>
+					<div class="subcategories-row">
+						{#each subcategories as subcat}
+							<button 
+								class="subcat-btn"
+								class:active={selectedSubcategory === subcat}
+								on:click={() => selectSubcategory(subcat)}
+							>
+								{subcat}
+							</button>
+						{/each}
+					</div>
 				</div>
 			{/if}
 		</div>
@@ -327,28 +329,33 @@
 							transition:fade={{ duration: 200 }}
 						>
 							<div class="item-header">
-								<h3 class="item-name">{item.name}</h3>
+								<div class="item-title-row">
+									<h3 class="item-name">{item.name}</h3>
+									{#if item.pricing.type === 'single'}
+										<span class="item-price-inline">€ {item.pricing.value.toFixed(2)}</span>
+									{/if}
+								</div>
 								{#if item.description}
 									<p class="item-description">{item.description}</p>
 								{/if}
 							</div>
-							<div class="item-footer">
-								{#if item.pricing.type === 'multiple'}
-									<div class="sizes">
-										{#each item.pricing.variants as variant}
-											<div class="size-badge">
-												<span class="size-name">{variant.name}</span>
-												<span class="size-price">€ {variant.price.toFixed(2)}</span>
-											</div>
-										{/each}
-									</div>
-								{:else if item.pricing.type === 'single'}
-									<div class="item-price">€ {item.pricing.value.toFixed(2)}</div>
-								{/if}
-								{#if item.note}
-									<div class="item-note">{item.note}</div>
-								{/if}
-							</div>
+							{#if item.pricing.type === 'multiple' || item.note}
+								<div class="item-footer">
+									{#if item.pricing.type === 'multiple'}
+										<div class="sizes">
+											{#each item.pricing.variants as variant}
+												<div class="size-badge">
+													<span class="size-name">{variant.name}</span>
+													<span class="size-price">€ {variant.price.toFixed(2)}</span>
+												</div>
+											{/each}
+										</div>
+									{/if}
+									{#if item.note}
+										<div class="item-note">{item.note}</div>
+									{/if}
+								</div>
+							{/if}
 						</div>
 					{/if}
 					{/each}
@@ -706,12 +713,35 @@
 		color: #c00;
 	}
 
-	/* Subcategories Row - parte da sotto la lente */
+	/* Subcategories Container */
+	.subcategories-container {
+		position: relative;
+		width: 100%;
+		overflow: hidden;
+		margin-top: 0.6rem;
+	}
+
+	/* Subcategories Row - scrolling orizzontale come categories */
 	.subcategories-row {
 		display: flex;
 		gap: 0.4rem;
-		flex-wrap: wrap;
-		margin-top: 0.6rem;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+		align-items: center;
+		padding-right: 10px;
+	}
+
+	.subcategories-row::-webkit-scrollbar {
+		display: none;
+	}
+
+	@media (min-width: 768px) {
+		.subcategories-row {
+			flex-wrap: wrap;
+			overflow-x: visible;
+			padding-right: 0;
+		}
 	}
 
 	.subcat-btn {
@@ -918,6 +948,33 @@
 		z-index: 1;
 	}
 
+	/* Titolo e prezzo inline per card normali */
+	.item-title-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 1rem;
+	}
+
+	.item-title-row .item-name {
+		flex: 1;
+		margin-bottom: 0.3rem;
+	}
+
+	.item-price-inline {
+		font-size: 1.3rem;
+		font-weight: 700;
+		color: var(--verde-meraki);
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+
+	@media (min-width: 768px) {
+		.item-price-inline {
+			font-size: 1.5rem;
+		}
+	}
+
 	.click-badge {
 		display: inline-flex;
 		align-items: center;
@@ -932,7 +989,7 @@
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 		animation: clickPulse 1.5s ease-in-out infinite;
-		cursor: pointer;
+		cursor: pointer; 
 	}
 
 	@keyframes clickPulse {
