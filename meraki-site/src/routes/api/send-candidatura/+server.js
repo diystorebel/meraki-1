@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { RESEND_API_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 // Configurazione destinatario email
 // TODO: Cambiare con email ufficiale Meraki quando disponibile
@@ -58,7 +58,7 @@ export async function POST({ request }) {
 		`;
 
 		// Verifica API key configurata
-		if (!RESEND_API_KEY) {
+		if (!env.RESEND_API_KEY) {
 			console.error('RESEND_API_KEY non configurata');
 			return json({ error: 'Servizio email non configurato' }, { status: 500 });
 		}
@@ -82,7 +82,7 @@ export async function POST({ request }) {
 		const emailResponse = await fetch('https://api.resend.com/emails', {
 			method: 'POST',
 			headers: {
-				'Authorization': `Bearer ${RESEND_API_KEY}`,
+				'Authorization': `Bearer ${env.RESEND_API_KEY}`,
 				'Content-Type': 'application/json'
 			},
 			body: JSON.stringify(emailPayload)
