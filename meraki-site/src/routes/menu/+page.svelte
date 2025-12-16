@@ -444,10 +444,10 @@
 	}
 
 	.logo {
-		font-family: 'Bebas Neue', sans-serif;
-		font-size: 1.5rem;
-		font-weight: 400;
-		letter-spacing: 0.15em;
+		font-family: 'Playfair Display', serif;
+		font-size: 1.2rem;
+		font-weight: 700;
+		letter-spacing: 0.1em;
 		color: var(--verde-meraki);
 		text-decoration: none;
 		white-space: nowrap;
@@ -455,7 +455,7 @@
 
 	@media (min-width: 768px) {
 		.logo {
-			font-size: 2.4rem;
+			font-size: 2rem;
 			letter-spacing: 0.2em;
 		}
 	}
@@ -972,7 +972,7 @@
 
 	.item-name {
 		font-family: 'Bebas Neue', sans-serif;
-		font-size: 1.4rem;
+		font-size: 1.6rem;
 		font-weight: 400;
 		color: var(--verde-meraki);
 		margin-bottom: 0.4rem;
@@ -982,23 +982,21 @@
 
 	@media (min-width: 768px) {
 		.item-name {
-			font-size: 1.6rem;
+			font-size: 1.9rem;
 		}
 	}
 
 	.item-description {
-		font-family: 'DM Sans', sans-serif;
-		font-size: 0.9rem;
+		font-size: 1rem;
 		font-weight: 400;
-		color: #777;
+		color: var(--grigio-scuro);
 		line-height: 1.5;
 		font-style: italic;
-		letter-spacing: 0.01em;
 	}
 
 	@media (min-width: 768px) {
 		.item-description {
-			font-size: 0.95rem;
+			font-size: 1.1rem;
 		}
 	}
 
@@ -1010,7 +1008,6 @@
 	}
 
 	.item-price {
-		font-family: 'DM Sans', sans-serif;
 		font-size: 1.1rem;
 		font-weight: 600;
 		color: var(--verde-meraki);
@@ -1037,15 +1034,12 @@
 	}
 
 	.size-name {
-		font-family: 'DM Sans', sans-serif;
 		font-size: 0.8rem;
-		color: #888;
+		color: var(--grigio-scuro);
 		font-weight: 500;
-		text-transform: capitalize;
 	}
 
 	.size-price {
-		font-family: 'DM Sans', sans-serif;
 		font-size: 1rem;
 		font-weight: 600;
 		color: var(--verde-meraki);
