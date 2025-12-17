@@ -367,7 +367,7 @@
 	<!-- Product Detail Modal -->
 	{#if selectedProduct}
 		<div class="modal-overlay" on:click={closeDetail} transition:fade={{ duration: 250 }}>
-			<div class="modal-detail" on:click|stopPropagation>
+			<div class="modal-detail" class:modal-premium={selectedProduct.image_url} on:click|stopPropagation>
 				<!-- Header con immagine hero -->
 				<div class="modal-hero">
 					{#if selectedProduct.image_url}
@@ -1147,6 +1147,10 @@
 		animation: modalPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 	}
 
+	.modal-detail.modal-premium {
+		border: 2px solid var(--verde-meraki);
+	}
+
 	@keyframes modalPop {
 		0% {
 			opacity: 0;
@@ -1170,21 +1174,17 @@
 		content: '';
 		position: absolute;
 		inset: 0;
-		background: radial-gradient(
-			ellipse 120% 100% at center 30%,
-			transparent 30%,
-			rgba(0, 0, 0, 0.6) 100%
-		);
+		background: 
+			radial-gradient(circle at top left, rgba(0, 0, 0, 0.6) 0%, transparent 50%),
+			radial-gradient(circle at top right, rgba(0, 0, 0, 0.6) 0%, transparent 50%);
 		z-index: 1;
 		pointer-events: none;
-		border-radius: 24px 24px 0 0;
 	}
 
 	.hero-img {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
-		border-radius: 24px 24px 0 0;
 	}
 
 	.hero-gradient {
