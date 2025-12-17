@@ -795,7 +795,7 @@
 	/* ========== CARD STANDARD (senza foto) ========== */
 	.menu-item {
 		background: var(--bianco);
-		border: 2px solid var(--grigio);
+		border: 2px solid rgba(26, 90, 26, 0.35); /* Verde più visibile e definito */
 		border-radius: 16px;
 		padding: 1.2rem;
 		transition: all 0.3s ease;
@@ -822,7 +822,7 @@
 	.menu-item-premium {
 		min-height: 180px;
 		cursor: pointer;
-		border: none;
+		border: 2px solid rgba(26, 90, 26, 0.4); /* Bordo più marcato per le card premium */
 		padding: 0;
 		background: transparent;
 	}
