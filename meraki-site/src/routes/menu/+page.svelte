@@ -12,20 +12,20 @@
 		{ 
 			name: 'Drinks', 
 			id: 'drink',
-			image: '/foto/cocktail.jpeg',
-			icon: '/immagini-categorie/cocktail.png'
+			image: '/foto/cocktail.webp',
+			icon: '/immagini-categorie/cocktail.webp'
 		},
 		{ 
 			name: 'Birre e Vini', 
 			id: 'wines',
-			image: '/foto/birre-vini.jpg',
-			icon: '/immagini-categorie/birre-vini.png'
+			image: '/foto/birre-vini.webp',
+			icon: '/immagini-categorie/birre-vini.webp'
 		},
 		{ 
 			name: 'Cucina', 
 			id: 'kitchen',
-			image: '/foto/cucina.jpeg',
-			icon: '/immagini-categorie/cibo.png'
+			image: '/foto/cucina.webp',
+			icon: '/immagini-categorie/cibo.webp'
 		}
 	];
 
