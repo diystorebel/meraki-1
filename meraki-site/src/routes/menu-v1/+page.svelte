@@ -25,7 +25,7 @@
 		}
 	];
 
-	let selectedMacro = null;
+	let selectedMacro = 'Cocktail'; // Pre-seleziona Cocktail all'apertura
 	let selectedSubcategory = null;
 	let searchTerm = '';
 	let searchExpanded = false;
@@ -174,23 +174,23 @@
 					</button>
 				</div>
 			{:else}
-				<div class="subcategories-row">
+				<div class="filters-wrapper">
 					<button class="search-btn" on:click={toggleSearch}>
 						<Search size={18} />
 					</button>
 					
 					{#if selectedMacro && subcategories.length > 0}
-						{#each subcategories as subcat}
-							<button 
-								class="subcat-btn"
-								class:active={selectedSubcategory === subcat}
-								on:click={() => selectSubcategory(subcat)}
-							>
-								{subcat}
-							</button>
-						{/each}
-					{:else}
-						<span class="hint-text">Seleziona una categoria sopra</span>
+						<div class="subcategories-grid">
+							{#each subcategories as subcat}
+								<button 
+									class="subcat-square"
+									class:active={selectedSubcategory === subcat}
+									on:click={() => selectSubcategory(subcat)}
+								>
+									{subcat}
+								</button>
+							{/each}
+						</div>
 					{/if}
 					
 					{#if selectedMacro || selectedSubcategory}
@@ -387,7 +387,7 @@
 		grid-template-columns: repeat(3, 1fr);
 		gap: 0.5rem;
 		padding: 0.5rem;
-		background: var(--verde-meraki);
+		background: var(--bianco);
 	}
 
 	.macro-tab {
@@ -410,6 +410,7 @@
 		height: 100%;
 		object-fit: cover;
 		transition: transform 0.5s ease;
+		transform: scale(1.15); /* Zoom leggermente le foto */
 	}
 
 	.macro-overlay {
@@ -424,7 +425,7 @@
 	}
 
 	.macro-tab:hover .macro-bg {
-		transform: scale(1.08);
+		transform: scale(1.25); /* Zoom maggiore al hover */
 	}
 
 	.macro-tab:hover .macro-overlay {
@@ -527,16 +528,18 @@
 		border-radius: 50%;
 	}
 
-	.subcategories-row {
+	.filters-wrapper {
 		display: flex;
-		gap: 0.5rem;
-		overflow-x: auto;
-		align-items: center;
-		padding-bottom: 0.25rem;
+		flex-direction: column;
+		gap: 1rem;
+		align-items: flex-start;
 	}
 
-	.subcategories-row::-webkit-scrollbar {
-		display: none;
+	@media (min-width: 640px) {
+		.filters-wrapper {
+			flex-direction: row;
+			align-items: center;
+		}
 	}
 
 	.search-btn {
@@ -553,29 +556,58 @@
 		flex-shrink: 0;
 	}
 
-	.subcat-btn {
-		padding: 0.5rem 1rem;
-		border: 1.5px solid var(--verde-light);
+	/* Subcategories Grid - Quadrati statici */
+	.subcategories-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+		gap: 0.75rem;
+		flex: 1;
+		width: 100%;
+	}
+
+	.subcat-square {
+		aspect-ratio: 1;
+		padding: 0.75rem;
+		border: 2px solid var(--grigio);
 		background: var(--bianco);
-		color: var(--verde-meraki);
-		border-radius: 20px;
-		font-weight: 600;
-		font-size: 0.9rem;
-		cursor: pointer;
-		white-space: nowrap;
-		flex-shrink: 0;
-		transition: all 0.2s;
-	}
-
-	.subcat-btn:hover, .subcat-btn.active {
-		background: var(--verde-light);
-		color: white;
-	}
-
-	.hint-text {
 		color: var(--grigio-scuro);
-		font-size: 0.9rem;
-		font-style: italic;
+		border-radius: 8px;
+		font-weight: 600;
+		font-size: 0.85rem;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		transition: all 0.2s ease;
+		line-height: 1.2;
+	}
+
+	.subcat-square:hover {
+		border-color: var(--verde-meraki);
+		color: var(--verde-meraki);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(21, 67, 21, 0.15);
+	}
+
+	.subcat-square.active {
+		background: var(--verde-meraki);
+		border-color: var(--verde-meraki);
+		color: white;
+		box-shadow: 0 4px 16px rgba(21, 67, 21, 0.25);
+	}
+
+	@media (min-width: 768px) {
+		.subcategories-grid {
+			grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+			gap: 1rem;
+		}
+
+		.subcat-square {
+			padding: 1rem;
+			font-size: 0.95rem;
+			border-radius: 12px;
+		}
 	}
 
 	.reset-btn {
