@@ -156,7 +156,9 @@
 				<button class="dropdown-trigger" on:click|stopPropagation={toggleDropdown}>
 					<Filter size={18} />
 					<span>{selectedSubcategory || 'Tutte'}</span>
-					<ChevronDown size={18} class:rotated={dropdownOpen} />
+					<span class="chevron" class:rotated={dropdownOpen}>
+						<ChevronDown size={18} />
+					</span>
 				</button>
 
 				{#if dropdownOpen}
@@ -483,7 +485,12 @@
 		background: var(--verde-light);
 	}
 
-	.dropdown-trigger :global(.rotated) {
+	.chevron {
+		display: flex;
+		transition: transform 0.2s;
+	}
+
+	.chevron.rotated {
 		transform: rotate(180deg);
 	}
 
