@@ -15,7 +15,7 @@
 		},
 		{ 
 			name: 'Birre e Vini', 
-			image: '/foto/birre e vini.jpg',
+			image: '/foto/birre-vini.jpg',
 			keywords: ['birr', 'vino', 'vini', 'wine', 'beer', 'bollicine', 'prosecco']
 		},
 		{ 
