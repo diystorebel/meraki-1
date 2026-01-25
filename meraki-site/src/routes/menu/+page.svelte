@@ -56,15 +56,11 @@
 	function getCategoriesForMacro(macro) {
 		if (!macro) return [];
 		const allCats = $categoriesStore;
-		console.log('🔍 Total categories in store:', allCats.length);
-		console.log('🔍 Looking for macro:', macro.id);
 		
 		const filtered = allCats.filter(cat => {
-			console.log('  - Category:', cat.name, 'has macro_category:', cat.macro_category);
 			return cat.macro_category === macro.id;
 		});
 		
-		console.log('✅ Filtered result:', filtered.length, 'categories');
 		return filtered;
 	}
 
@@ -99,12 +95,7 @@
 	}
 
 	$: {
-		console.log('🔄 Reactive block triggered');
-		console.log('📊 Categories store:', $categoriesStore.length, 'items');
-		console.log('📊 Menu store:', $menuStore.length, 'items');
-		console.log('📊 Selected macro:', selectedMacro.name, selectedMacro.id);
 		categories = selectedMacro ? getCategoriesForMacro(selectedMacro) : [];
-		console.log('📊 Categories for macro:', categories.length, 'items');
 	}
 	
 	$: isLoading = $categoriesStore.length === 0 || $menuStore.length === 0;

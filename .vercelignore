@@ -7,10 +7,11 @@ node_modules
 .env.development
 .env.test
 
-# File di sviluppo
-foto/
+# File di sviluppo (root level, non quelle in static/)
+/foto/
 DOCS/
 meraki-digital-menu.html
+immagini categorie/
 
 # File temporanei
 *.tmp
