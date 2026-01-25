@@ -10,17 +10,17 @@
 	const MACRO_CATEGORIES = [
 		{ 
 			name: 'Cocktail', 
-			icon: '🍸',
+			image: '/foto/cocktail.jpeg',
 			keywords: ['cocktail', 'spirit', 'drink', 'aperitivo']
 		},
 		{ 
 			name: 'Birre e Vini', 
-			icon: '🍷',
+			image: '/foto/birre e vini.jpg',
 			keywords: ['birr', 'vino', 'vini', 'wine', 'beer', 'bollicine', 'prosecco']
 		},
 		{ 
 			name: 'Cucina', 
-			icon: '🍽️',
+			image: '/foto/cucina.jpeg',
 			keywords: ['cucina', 'antipast', 'primo', 'second', 'dolc', 'pizza', 'panin', 'taglier', 'food']
 		}
 	];
@@ -141,7 +141,7 @@
 		(€ 5,00 senza glutine o lattosio) avrai una selezione di stuzzichini preparati al momento dal nostro chef!
 	</div>
 
-	<!-- MACRO TABS - Grandi e prominenti -->
+	<!-- MACRO TABS - Card con immagini -->
 	<div class="macro-tabs">
 		{#each MACRO_CATEGORIES as macro}
 			<button 
@@ -149,7 +149,8 @@
 				class:active={selectedMacro === macro.name}
 				on:click={() => selectMacro(macro.name)}
 			>
-				<span class="macro-icon">{macro.icon}</span>
+				<img src={macro.image} alt={macro.name} class="macro-bg" loading="lazy" />
+				<div class="macro-overlay"></div>
 				<span class="macro-name">{macro.name}</span>
 			</button>
 		{/each}
@@ -380,67 +381,99 @@
 		line-height: 1.5;
 	}
 
-	/* MACRO TABS - Il focus di V1 */
+	/* MACRO TABS - Card con immagini */
 	.macro-tabs {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
-		gap: 0;
-		background: var(--grigio-chiaro);
-		border-bottom: 2px solid var(--grigio);
+		gap: 0.5rem;
+		padding: 0.5rem;
+		background: var(--verde-meraki);
 	}
 
 	.macro-tab {
+		position: relative;
 		display: flex;
-		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		gap: 0.3rem;
-		padding: 1.2rem 0.5rem;
-		background: var(--bianco);
+		min-height: 100px;
 		border: none;
-		border-right: 1px solid var(--grigio);
+		border-radius: 12px;
 		cursor: pointer;
+		overflow: hidden;
 		transition: all 0.3s ease;
 	}
 
-	.macro-tab:last-child {
-		border-right: none;
+	.macro-bg {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		transition: transform 0.5s ease;
 	}
 
-	.macro-tab:hover {
-		background: var(--grigio-chiaro);
+	.macro-overlay {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(
+			135deg,
+			rgba(21, 67, 21, 0.75) 0%,
+			rgba(21, 67, 21, 0.55) 100%
+		);
+		transition: all 0.3s ease;
+	}
+
+	.macro-tab:hover .macro-bg {
+		transform: scale(1.08);
+	}
+
+	.macro-tab:hover .macro-overlay {
+		background: linear-gradient(
+			135deg,
+			rgba(21, 67, 21, 0.65) 0%,
+			rgba(21, 67, 21, 0.45) 100%
+		);
 	}
 
 	.macro-tab.active {
-		background: var(--verde-meraki);
-		color: white;
+		box-shadow: 0 0 0 3px var(--bianco), 0 4px 15px rgba(0, 0, 0, 0.3);
 	}
 
-	.macro-icon {
-		font-size: 1.8rem;
+	.macro-tab.active .macro-overlay {
+		background: linear-gradient(
+			135deg,
+			rgba(21, 67, 21, 0.45) 0%,
+			rgba(21, 67, 21, 0.25) 100%
+		);
 	}
 
 	.macro-name {
+		position: relative;
+		z-index: 2;
 		font-family: 'Bebas Neue', 'Playfair Display', serif;
-		font-size: 1rem;
+		font-size: 1.1rem;
 		font-weight: 600;
 		text-transform: uppercase;
-		letter-spacing: 0.05em;
+		letter-spacing: 0.08em;
+		color: var(--bianco);
+		text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+		padding: 0.5rem 1rem;
 	}
 
 	@media (min-width: 768px) {
-		.macro-tab {
-			padding: 1.5rem 1rem;
-			flex-direction: row;
-			gap: 0.8rem;
+		.macro-tabs {
+			gap: 0.75rem;
+			padding: 0.75rem;
 		}
 
-		.macro-icon {
-			font-size: 2rem;
+		.macro-tab {
+			min-height: 140px;
+			border-radius: 16px;
 		}
 
 		.macro-name {
-			font-size: 1.3rem;
+			font-size: 1.5rem;
+			letter-spacing: 0.1em;
 		}
 	}
 
