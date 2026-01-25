@@ -16,12 +16,6 @@
 	</header>
 
 	<main>
-		<div class="intro">
-			<h1>🎨 Demo Layout Menu</h1>
-			<p>Abbiamo preparato 4 proposte per il nuovo menu digitale. <br/>
-			<strong>Guardale tutte e dicci quale preferite!</strong></p>
-		</div>
-
 		<div class="options-grid">
 			<!-- V1 -->
 			<a href="/menu-v1" class="option-card v1">
@@ -99,21 +93,7 @@
 				</div>
 			</a>
 		</div>
-
-		<div class="comparison-note">
-			<h3>💡 Come scegliere?</h3>
-			<p>Provate ogni versione sul vostro telefono. Pensate a cosa cercano di solito i vostri clienti:</p>
-			<ul>
-				<li><strong>V1/V4</strong> → Per chi sa già cosa vuole e cerca velocemente</li>
-				<li><strong>V2</strong> → Per chi vuole esplorare tutto il menu sezione per sezione</li>
-				<li><strong>V3</strong> → Per un'esperienza moderna stile app di delivery</li>
-			</ul>
-		</div>
 	</main>
-
-	<footer>
-		<p>Fatto con ❤️ per <strong>Meraki Lainate</strong></p>
-	</footer>
 </div>
 
 <style>
@@ -158,23 +138,6 @@
 		max-width: 1200px;
 		margin: 0 auto;
 		width: 100%;
-	}
-
-	.intro {
-		text-align: center;
-		margin-bottom: 2.5rem;
-	}
-
-	.intro h1 {
-		font-size: 2rem;
-		color: var(--verde-meraki);
-		margin-bottom: 0.75rem;
-	}
-
-	.intro p {
-		color: var(--grigio-scuro);
-		font-size: 1.1rem;
-		line-height: 1.6;
 	}
 
 	.options-grid {
@@ -305,46 +268,4 @@
 	.v2:hover .card-cta { background: #e67e22; color: white; }
 	.v3:hover .card-cta { background: #9b59b6; color: white; }
 	.v4:hover .card-cta { background: #3498db; color: white; }
-
-	.comparison-note {
-		margin-top: 3rem;
-		padding: 1.5rem;
-		background: white;
-		border-radius: 16px;
-		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-	}
-
-	.comparison-note h3 {
-		font-size: 1.2rem;
-		color: var(--verde-meraki);
-		margin-bottom: 0.75rem;
-	}
-
-	.comparison-note > p {
-		color: var(--grigio-scuro);
-		margin-bottom: 1rem;
-	}
-
-	.comparison-note ul {
-		list-style: none;
-		padding: 0;
-		margin: 0;
-	}
-
-	.comparison-note li {
-		padding: 0.5rem 0;
-		font-size: 0.95rem;
-		color: var(--grigio-scuro);
-	}
-
-	footer {
-		text-align: center;
-		padding: 1.5rem;
-		color: var(--grigio-scuro);
-		font-size: 0.9rem;
-	}
-
-	footer strong {
-		color: var(--verde-meraki);
-	}
 </style>
