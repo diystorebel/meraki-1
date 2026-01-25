@@ -122,6 +122,8 @@
 				<a href="/privacy-policy">Privacy</a>
 				<span>•</span>
 				<a href="/lavora-con-noi">Lavora con Noi</a>
+				<span>•</span>
+				<a href="/menu-demo" class="demo-link">Menu Demo</a>
 			</div>
 		</footer>
 	</div>
@@ -468,6 +470,10 @@
 
 	.footer-links a:hover {
 		text-decoration: underline;
+	}
+
+	.footer-links .demo-link {
+		color: #9b59b6;
 	}
 
 </style>
