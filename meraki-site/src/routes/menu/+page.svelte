@@ -1,409 +1,583 @@
 <script>
 	import { onMount } from 'svelte';
-	import { categoriesStore, getSubcategoriesForCategory } from '$lib/stores/categoriesStore.js';
+	import { categoriesStore } from '$lib/stores/categoriesStore.js';
 	import { menuStore } from '$lib/stores/menuStore.js';
-	import { loadEventiVisibili, getStatoEvento, getBadgeText } from '$lib/stores/eventiStore.js';
+	import { eventiStore, loadEventiVisibili, getStatoEvento, getBadgeText } from '$lib/stores/eventiStore.js';
 	import { smartSearch } from '$lib/utils/smartSearch.js';
-	import { fade, fly } from 'svelte/transition';
-	import { X, Search, MousePointerClick, Home, Calendar, Clock, Sparkles, Phone } from 'lucide-svelte';
+	import { fade, slide } from 'svelte/transition';
+	import { X, Search, Home, ChevronDown, ArrowLeft, Calendar, Phone } from 'lucide-svelte';
 
+	// Macro-categorie configurabili - ora usano il campo macro_category dal DB
+	const MACRO_CATEGORIES = [
+		{ 
+			name: 'Drinks', 
+			id: 'drink',
+			image: '/foto/cocktail.jpeg',
+			icon: '/immagini-categorie/cocktail.png'
+		},
+		{ 
+			name: 'Birre e Vini', 
+			id: 'wines',
+			image: '/foto/birre-vini.jpg',
+			icon: '/immagini-categorie/birre-vini.png'
+		},
+		{ 
+			name: 'Cucina', 
+			id: 'kitchen',
+			image: '/foto/cucina.jpeg',
+			icon: '/immagini-categorie/cibo.png'
+		}
+	];
+
+	let selectedMacro = MACRO_CATEGORIES[0]; // Default: Drinks
+	let openAccordion = null; // formato: "catId" o "catId_subcatName"
+	let searchTerm = '';
+	let searchFocused = false;
+	let selectedProduct = null;
+	let categories = [];
 	let eventiVisibili = [];
-	let showEventiPopup = false;
-	let zoomedImage = null;
+	let showEventoPopup = false;
+	let eventoCorrente = null;
 
 	onMount(async () => {
-		// Carica eventi visibili (in corso + in arrivo)
+		// Il caricamento dati è gestito dal layout
+		
+		// Carica eventi visibili (in corso o in arrivo)
 		eventiVisibili = await loadEventiVisibili();
 		
-		// Mostra popup solo al primo accesso (sessione)
-		const hasSeenEventiPopup = sessionStorage.getItem('hasSeenEventiPopup');
-		if (!hasSeenEventiPopup && eventiVisibili.length > 0) {
-			showEventiPopup = true;
-			sessionStorage.setItem('hasSeenEventiPopup', 'true');
+		// Mostra popup se ci sono eventi E non è già stato mostrato in questa sessione
+		if (eventiVisibili.length > 0 && !sessionStorage.getItem('eventoPopupShown')) {
+			eventoCorrente = eventiVisibili[0]; // Mostra il primo evento
+			showEventoPopup = true;
+			sessionStorage.setItem('eventoPopupShown', 'true');
 		}
 	});
 
-	function formatData(isoDate) {
-		const date = new Date(isoDate);
-		return date.toLocaleDateString('it-IT', { 
-			weekday: 'long', 
-			year: 'numeric', 
-			month: 'long', 
-			day: 'numeric' 
+	function getCategoriesForMacro(macro) {
+		if (!macro) return [];
+		const allCats = $categoriesStore;
+		console.log('🔍 Total categories in store:', allCats.length);
+		console.log('🔍 Looking for macro:', macro.id);
+		
+		const filtered = allCats.filter(cat => {
+			console.log('  - Category:', cat.name, 'has macro_category:', cat.macro_category);
+			return cat.macro_category === macro.id;
 		});
+		
+		console.log('✅ Filtered result:', filtered.length, 'categories');
+		return filtered;
 	}
 
-	$: categories = $categoriesStore.map(c => c.name);
-
-	let selectedCategory = null;
-	let selectedSubcategory = null;
-	let searchTerm = '';
-	let selectedProduct = null;
-	let searchExpanded = false;
-	let showScrollHint = true;
-
-	function handleCategoriesScroll(e) {
-		const el = e.target;
-		const scrollEnd = el.scrollWidth - el.clientWidth;
-		// Nascondi la freccia se siamo quasi alla fine
-		showScrollHint = el.scrollLeft < scrollEnd - 10;
+	// Ottiene le sottocategorie effettivamente usate (con prodotti) per una categoria
+	// Rispetta l'ordine definito in categories.subcategories
+	function getUsedSubcategories(categoryId) {
+		const category = $categoriesStore.find(c => c.id === categoryId);
+		const definedOrder = category?.subcategories || [];
+		
+		const items = $menuStore.filter(item => item.category_id === categoryId);
+		const usedSubcats = new Set(items.map(i => i.subcategory).filter(Boolean));
+		
+		// Mantieni l'ordine definito, filtrando solo quelle con prodotti
+		const orderedUsed = definedOrder.filter(sub => usedSubcats.has(sub));
+		
+		// Aggiungi eventuali sottocategorie usate ma non definite nell'ordine (alla fine)
+		const notInOrder = [...usedSubcats].filter(sub => !definedOrder.includes(sub));
+		
+		return [...orderedUsed, ...notInOrder];
 	}
 
-	$: subcategories = selectedCategory ? getSubcategoriesForCategory($categoriesStore, selectedCategory) : [];
+	// Ottiene i prodotti per una categoria e sottocategoria specifica
+	function getItemsForSubcategory(categoryId, subcategory) {
+		return $menuStore.filter(item => 
+			item.category_id === categoryId && item.subcategory === subcategory
+		);
+	}
+
+	// Ottiene i prodotti per una categoria (usato quando non ci sono sottocategorie)
+	function getItemsForCategory(categoryId) {
+		return $menuStore.filter(item => item.category_id === categoryId);
+	}
+
+	$: {
+		console.log('🔄 Reactive block triggered');
+		console.log('📊 Categories store:', $categoriesStore.length, 'items');
+		console.log('📊 Menu store:', $menuStore.length, 'items');
+		console.log('📊 Selected macro:', selectedMacro.name, selectedMacro.id);
+		categories = selectedMacro ? getCategoriesForMacro(selectedMacro) : [];
+		console.log('📊 Categories for macro:', categories.length, 'items');
+	}
 	
-	// Helper to get category name from ID
-	function getCategoryName(categoryId) {
-		const cat = $categoriesStore.find(c => c.id === categoryId);
-		return cat ? cat.name : '';
-	}
+	$: isLoading = $categoriesStore.length === 0 || $menuStore.length === 0;
 
-	// Smart Search: usa ricerca semantica con sinonimi e word boundaries
 	$: filteredItems = (() => {
-		// Filtra solo items disponibili
-		const availableItems = $menuStore.filter(item => item.is_available);
-		
-		// Se c'è una ricerca attiva, usa smart search (ignora categoria/sottocategoria)
-		if (searchTerm && searchTerm.trim() !== '') {
-			return smartSearch(availableItems, searchTerm);
+		if (searchTerm.trim()) {
+			return smartSearch([...$menuStore], searchTerm);
 		}
-		
-		// Altrimenti filtra per categoria/sottocategoria
-		return availableItems.filter(item => {
-			const itemCategoryName = getCategoryName(item.category_id);
-			const matchesCategory = !selectedCategory || itemCategoryName === selectedCategory;
-			const matchesSubcategory = !selectedSubcategory || item.subcategory === selectedSubcategory;
-			return matchesCategory && matchesSubcategory;
-		});
+		return [];
 	})();
 
-	function openProductDetail(product) {
-		if (product.image_url) {
-			selectedProduct = product;
+	function selectMacro(macro) {
+		selectedMacro = macro;
+		openAccordion = null;
+		window.scrollTo({ top: 0, behavior: 'smooth' });
+	}
+
+	function toggleAccordion(accordionId) {
+		const isCurrentlyOpen = openAccordion === accordionId;
+		const willOpen = !isCurrentlyOpen;
+		
+		openAccordion = isCurrentlyOpen ? null : accordionId;
+		
+		if (willOpen && typeof window !== 'undefined') {
+			setTimeout(() => {
+				const element = document.getElementById(`accordion-${accordionId}`);
+				if (element) {
+					const headerOffset = 100;
+					const elementPosition = element.getBoundingClientRect().top;
+					const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+					
+					window.scrollTo({
+						top: offsetPosition,
+						behavior: 'smooth'
+					});
+				}
+			}, 350);
 		}
+	}
+
+	function openProductDetail(product) {
+		if (product.image_url) selectedProduct = product;
 	}
 
 	function closeDetail() {
 		selectedProduct = null;
 	}
-
-	function selectCategory(cat) {
-		if (selectedCategory === cat) {
-			selectedCategory = null;
-			selectedSubcategory = null;
+	
+	function closeEventoPopup() {
+		showEventoPopup = false;
+		eventoCorrente = null;
+	}
+	
+	// Formatta data evento: mostra orario solo se significativo (non 00:00 o 23:59)
+	function formatEventoDate(dateString) {
+		const date = new Date(dateString);
+		const hours = date.getHours();
+		const minutes = date.getMinutes();
+		
+		// Se è mezzanotte (00:00) o quasi fine giornata (23:59), mostra solo la data
+		const isFullDay = (hours === 0 && minutes === 0) || (hours === 23 && minutes === 59);
+		
+		if (isFullDay) {
+			return date.toLocaleDateString('it-IT', {
+				day: 'numeric',
+				month: 'long',
+				year: 'numeric'
+			});
 		} else {
-			selectedCategory = cat;
-			selectedSubcategory = null;
+			return date.toLocaleDateString('it-IT', {
+				day: 'numeric',
+				month: 'long',
+				year: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit'
+			});
 		}
 	}
 
-	function selectSubcategory(subcat) {
-		selectedSubcategory = selectedSubcategory === subcat ? null : subcat;
-	}
-
-	function clearFilters() {
-		selectedCategory = null;
-		selectedSubcategory = null;
-		searchTerm = '';
-		searchExpanded = false;
-	}
-
-	function toggleSearch() {
-		searchExpanded = !searchExpanded;
-		if (!searchExpanded) {
-			searchTerm = '';
-		}
-	}
-
-	// Blocca scroll quando modal aperto
 	$: if (typeof document !== 'undefined') {
-		if (selectedProduct) {
-			document.body.style.overflow = 'hidden';
-		} else {
-			document.body.style.overflow = '';
-		}
+		document.body.style.overflow = selectedProduct || showEventoPopup ? 'hidden' : '';
 	}
 </script>
 
 <svelte:head>
-	<title>Menu - Meraki Lainate</title>
+	<title>Menu | Meraki</title>
 </svelte:head>
 
-<div class="menu-page">
-	<!-- Popup Eventi -->
-	{#if showEventiPopup && eventiVisibili.length > 0}
-		<div class="eventi-popup-overlay" transition:fade on:click={() => showEventiPopup = false}>
-			<div class="eventi-popup" on:click|stopPropagation transition:fade={{ delay: 200 }}>
-				<button class="popup-close" on:click={() => showEventiPopup = false}>
-					<X size={24} />
-				</button>
-				
-				<div class="popup-header">
-					<h2>🎉 Eventi</h2>
-					<p>Non perdere i nostri appuntamenti!</p>
-				</div>
-
-				<div class="popup-eventi-list">
-					{#each eventiVisibili as evento}
-						{@const badgeText = getBadgeText(evento)}
-						{@const stato = getStatoEvento(evento)}
-						{@const dataShort = new Date(evento.data_inizio).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
-						<div class="popup-evento-card">
-							{#if evento.immagine_url}
-								<div class="popup-evento-image" on:click={() => zoomedImage = evento.immagine_url} role="button" tabindex="0" on:keypress={(e) => e.key === 'Enter' && (zoomedImage = evento.immagine_url)}>
-									<img src={evento.immagine_url} alt={evento.titolo} />
-								</div>
-							{/if}
-							<div class="popup-evento-content">
-								<div class="popup-evento-header">
-									{#if badgeText}
-										<span class="popup-badge" class:in-corso={stato === 'in_corso'} class:in-arrivo={stato === 'in_arrivo'}>{badgeText}</span>
-									{/if}
-									<span class="popup-data">{dataShort}{#if evento.orario} · {evento.orario}{/if}</span>
-								</div>
-								<h3>{evento.titolo}</h3>
-								<p>{evento.descrizione}</p>
-							</div>
-						</div>
-					{/each}
-				</div>
-
-				<div class="popup-footer">
-					<a href="/eventi" class="btn-prenota">
-						Visualizza Eventi
-					</a>
-					<button class="btn-chiudi" on:click={() => showEventiPopup = false}>
-						Vai al Menu
-					</button>
-				</div>
-			</div>
-		</div>
-	{/if}
-
-	<!-- Image Zoom Modal -->
-	{#if zoomedImage}
-		<div class="zoom-modal" on:click={() => zoomedImage = null} role="button" tabindex="0" on:keypress={(e) => e.key === 'Escape' && (zoomedImage = null)}>
-			<button class="zoom-close" on:click={() => zoomedImage = null}>
-				<X size={32} />
-			</button>
-			<img src={zoomedImage} alt="Evento" class="zoomed-image" on:click|stopPropagation />
-		</div>
-	{/if}
-
-	<!-- Header -->
-	<header class="menu-header">
-		<div class="header-content">
+<div class="app-container">
+	<!-- Top Bar -->
+	<header class="top-bar">
+		<div class="top-bar-row">
 			<a href="/" class="logo">MERAKI</a>
-			<a href="/" class="back-button">
-				<Home size={20} />
-				Home
+			<a href="/" class="back-link">
+				<Home size={18} />
 			</a>
+		</div>
+		
+		<!-- Search Bar -->
+		<div class="search-container" class:focused={searchFocused}>
+			<Search size={18} class="search-icon" />
+			<input 
+				type="text" 
+				placeholder="Cerca drink o ingredienti..." 
+				bind:value={searchTerm}
+				on:focus={() => searchFocused = true}
+				on:blur={() => searchFocused = false}
+			/>
+			{#if searchTerm}
+				<button class="clear-search" on:click={() => searchTerm = ''}>
+					<X size={16} />
+				</button>
+			{/if}
 		</div>
 	</header>
 
-	<!-- Aperitivo Banner -->
-	<div class="aperitivo-banner">
-		<strong>Aperitivo fino alle 21:00!</strong> Scegli il cocktail che preferisci e con l'aggiunta di € 3,00 
-		(€ 5,00 senza glutine o lattosio) avrai una selezione di stuzzichini preparati al momento dal nostro chef!
+	<!-- Macro Categories - Tab Bar Style -->
+	<div class="macro-tabs-container">
+		{#each MACRO_CATEGORIES as macro}
+			<button 
+				class="macro-tab-btn" 
+				class:active={selectedMacro.name === macro.name}
+				on:click={() => selectMacro(macro)}
+			>
+				<img src={macro.icon} alt={macro.name} class="macro-icon" />
+				<span class="macro-tab-text">{macro.name}</span>
+			</button>
+		{/each}
 	</div>
 
-	<!-- Filters -->
-	<div class="filters-section">
-		<div class="container">
-			<!-- Search espanso OPPURE Categories -->
-			{#if searchExpanded || searchTerm}
-				<!-- Modalità ricerca: barra full width -->
-				<div class="search-expanded">
-					<Search size={18} class="search-icon-static" />
-					<input 
-						type="text" 
-						placeholder="Cerca nel menu..." 
-						bind:value={searchTerm}
-						class="search-input-full"
-						autofocus
-					/>
-					<button class="search-close-btn" on:click={() => { searchTerm = ''; searchExpanded = false; }}>
-						<X size={18} />
-					</button>
-				</div>
-			{:else}
-				<!-- Modalità normale: chips categorie -->
-				<div class="categories-container">
-					<div class="categories-row" on:scroll={handleCategoriesScroll}>
-						<button class="search-btn" on:click={toggleSearch}>
-							<Search size={18} />
-						</button>
-						
-						{#each categories as cat}
-							<button 
-								class="cat-btn"
-								class:active={selectedCategory === cat}
-								on:click={() => selectCategory(cat)}
-							>
-								{cat}
-							</button>
-						{/each}
-						
-						{#if selectedCategory || selectedSubcategory}
-							<button class="reset-btn" on:click={clearFilters}>
-								<X size={14} />
-							</button>
-						{/if}
-					</div>
-					{#if showScrollHint}
-						<div class="scroll-hint" transition:fade={{ duration: 200 }}>›</div>
-					{/if}
-				</div>
-			{/if}
-
-			<!-- Subcategories (nascoste durante la ricerca) -->
-			{#if selectedCategory && subcategories.length > 0 && !searchExpanded && !searchTerm}
-				<div class="subcategories-container" transition:fade={{ duration: 150 }}>
-					<div class="subcategories-row">
-						{#each subcategories as subcat}
-							<button 
-								class="subcat-btn"
-								class:active={selectedSubcategory === subcat}
-								on:click={() => selectSubcategory(subcat)}
-							>
-								{subcat}
-							</button>
-						{/each}
-					</div>
-				</div>
-			{/if}
-		</div>
-	</div>
-
-	<!-- Menu Items -->
-	<div class="menu-items">
-		<div class="container">
+	<!-- Main Content -->
+	<main class="content-area">
+		{#if searchTerm.trim()}
+			<!-- Search Results -->
 			{#if filteredItems.length > 0}
-				<div class="items-grid">
+				<div class="products-grid">
 					{#each filteredItems as item (item.id)}
-					{#if item.image_url}
-						<!-- Card CON FOTO - Layout premium con immagine sfondo -->
 						<div 
-							class="menu-item menu-item-premium" 
-							on:click={() => openProductDetail(item)}
-							transition:fade={{ duration: 200 }}
+							class="product-card" 
+							class:unavailable={item.is_available === false}
+							role="button" 
+							tabindex="0"
+							on:click={() => item.is_available !== false && item.image_url && openProductDetail(item)}
+							on:keydown={(e) => e.key === 'Enter' && item.is_available !== false && item.image_url && openProductDetail(item)}
 						>
-							<!-- Immagine di sfondo -->
-							<div class="premium-bg">
-								<img src={item.image_url} alt={item.name} loading="lazy" />
-								<div class="premium-overlay"></div>
-							</div>
-							
-							<!-- Contenuto sopra l'immagine -->
-							<div class="premium-content">
-								<h3 class="item-name">{item.name}</h3>
+							{#if item.is_available === false}
+								<div class="unavailable-badge">Non disponibile</div>
+							{/if}
+							<div class="product-info">
+								<h3 class="product-name">{item.name}</h3>
 								{#if item.description}
-									<p class="item-description">{item.description}</p>
+									<p class="product-desc">{item.description}</p>
 								{/if}
-								
-								<div class="premium-footer">
-									<span class="click-badge">+ Info</span>
-									{#if item.pricing.type === 'multiple'}
-										<div class="sizes">
-											{#each item.pricing.variants as variant}
-												<div class="size-badge">
-													<span class="size-name">{variant.name}</span>
-													<span class="size-price">€ {variant.price.toFixed(2)}</span>
-												</div>
-											{/each}
-										</div>
-									{:else if item.pricing.type === 'single'}
-										<div class="item-price">€ {item.pricing.value.toFixed(2)}</div>
+								<div class="product-price">
+									{#if item.pricing.type === 'single'}
+										€ {item.pricing.value.toFixed(2)}
+									{:else}
+										Da € {Math.min(...item.pricing.variants.map(v => v.price)).toFixed(2)}
 									{/if}
 								</div>
 							</div>
+							{#if item.image_url}
+								<div class="product-thumb">
+									<img src={item.image_url} alt={item.name} loading="lazy" />
+								</div>
+							{/if}
 						</div>
-					{:else}
-						<!-- Card SENZA FOTO - Layout standard -->
-						<div 
-							class="menu-item" 
-							transition:fade={{ duration: 200 }}
-						>
-							<div class="item-header">
-								<h3 class="item-name">{item.name}</h3>
-								{#if item.description}
-									<p class="item-description">{item.description}</p>
-								{/if}
-							</div>
-							<div class="item-footer">
-								{#if item.pricing.type === 'multiple'}
-									<div class="sizes">
-										{#each item.pricing.variants as variant}
-											<div class="size-badge">
-												<span class="size-name">{variant.name}</span>
-												<span class="size-price">€ {variant.price.toFixed(2)}</span>
-											</div>
-										{/each}
-									</div>
-								{:else if item.pricing.type === 'single'}
-									<div class="item-price">€ {item.pricing.value.toFixed(2)}</div>
-								{/if}
-								{#if item.note}
-									<div class="item-note">{item.note}</div>
-								{/if}
-							</div>
-						</div>
-					{/if}
 					{/each}
 				</div>
 			{:else}
 				<div class="empty-state">
-					<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-						<circle cx="12" cy="12" r="10"/>
-						<path d="M16 16s-1.5-2-4-2-4 2-4 2M9 9h.01M15 9h.01"/>
-					</svg>
-					<h3>Nessun prodotto trovato</h3>
-					<p>Prova a modificare i filtri o la ricerca</p>
-					<button class="reset-button" on:click={clearFilters}>Reset Filtri</button>
+					<p>Nessun risultato trovato</p>
+					<button class="reset-btn" on:click={() => searchTerm = ''}>
+						Mostra tutto
+					</button>
 				</div>
 			{/if}
-		</div>
-	</div>
-
-	<!-- Product Detail Modal -->
-	{#if selectedProduct}
-		<div class="modal-overlay" on:click={closeDetail} transition:fade={{ duration: 250 }}>
-			<div class="modal-detail" class:modal-premium={selectedProduct.image_url} on:click|stopPropagation>
-				<!-- Header con immagine hero -->
-				<div class="modal-hero">
-					{#if selectedProduct.image_url}
-						<img src={selectedProduct.image_url} alt={selectedProduct.name} class="hero-img" />
-					{/if}
-					<div class="hero-gradient"></div>
-					
-				<!-- Close button -->
-				<button class="close-modal" on:click={closeDetail}>
-					<X size={20} />
-				</button>
+		{:else}
+			<!-- Menu con categorie e sottocategorie -->
+			{#if isLoading}
+				<div class="loading-state">
+					<div class="spinner"></div>
+					<p>Caricamento menu...</p>
 				</div>
+			{:else if categories.length > 0}
+				<div class="menu-sections">
+					{#each categories as cat (cat.id)}
+						{@const usedSubcategories = getUsedSubcategories(cat.id)}
+						{@const hasSubcategories = usedSubcategories.length > 0}
+						
+						{#if hasSubcategories}
+							<!-- Categoria CON sottocategorie: header + accordion sottocategorie -->
+							<div class="category-section">
+								<div class="category-header">
+									<h2 class="category-title">{cat.name}</h2>
+								</div>
+								
+								<div class="accordion-container">
+									{#each usedSubcategories as subcat}
+										{@const accordionId = `${cat.id}_${subcat}`}
+										{@const isOpen = openAccordion === accordionId}
+										{@const subcatItems = getItemsForSubcategory(cat.id, subcat)}
+										
+										<div class="accordion-item" id="accordion-{accordionId}">
+											<button 
+												class="accordion-header" 
+												class:open={isOpen}
+												on:click={() => toggleAccordion(accordionId)}
+											>
+												<div class="accordion-header-content">
+													<h3 class="accordion-title">{subcat}</h3>
+													<p class="accordion-subtitle">{subcatItems.length} prodotti</p>
+												</div>
+												<ChevronDown 
+													size={24} 
+													class="accordion-chevron" 
+													style="transform: rotate({isOpen ? '180deg' : '0deg'}); transition: transform 0.3s ease;"
+												/>
+											</button>
+											
+											{#if isOpen}
+												<div class="accordion-content" transition:slide={{ duration: 300 }}>
+													{#if subcatItems.length > 0}
+														<div class="products-list">
+															{#each subcatItems as item (item.id)}
+																<div 
+																	class="product-card-compact" 
+																	class:unavailable={item.is_available === false}
+																	class:has-image={item.image_url}
+																	style={item.image_url ? `background-image: url('${item.image_url}')` : ''}
+																	role="button" 
+																	tabindex="0"
+																	on:click={() => item.is_available !== false && item.image_url && openProductDetail(item)}
+																	on:keydown={(e) => e.key === 'Enter' && item.is_available !== false && item.image_url && openProductDetail(item)}
+																>
+																	{#if item.is_available === false}
+																		<div class="unavailable-badge">Non disponibile</div>
+																	{/if}
+																	{#if item.image_url}
+																		<div class="product-overlay"></div>
+																	{/if}
+																	<div class="product-info">
+																		<div>
+																			<h3 class="product-name">{item.name}</h3>
+																			{#if item.description}
+																				<p class="product-desc">{item.description}</p>
+																			{/if}
+																		</div>
+																		<div class="product-price">
+																			{#if item.pricing.type === 'single'}
+																				€ {item.pricing.value.toFixed(2)}
+																			{:else}
+																				<div class="variants-compact">
+																					{#each item.pricing.variants as variant}
+																						<span class="variant-compact">
+																							{variant.name}: <strong>€ {variant.price.toFixed(2)}</strong>
+																						</span>
+																					{/each}
+																				</div>
+																			{/if}
+																		</div>
+																	</div>
+																</div>
+															{/each}
+														</div>
+													{:else}
+														<p class="no-products">Nessun prodotto disponibile</p>
+													{/if}
+												</div>
+											{/if}
+										</div>
+									{/each}
+								</div>
+							</div>
+						{:else}
+							<!-- Categoria SENZA sottocategorie: accordion diretto -->
+							{@const accordionId = `${cat.id}`}
+							{@const isOpen = openAccordion === accordionId}
+							{@const categoryItems = getItemsForCategory(cat.id)}
+							
+							<div class="accordion-container">
+								<div class="accordion-item" id="accordion-{accordionId}">
+									<button 
+										class="accordion-header" 
+										class:open={isOpen}
+										on:click={() => toggleAccordion(accordionId)}
+									>
+										<div class="accordion-header-content">
+											<h3 class="accordion-title">{cat.name}</h3>
+											<p class="accordion-subtitle">{categoryItems.length} prodotti</p>
+										</div>
+										<ChevronDown 
+											size={24} 
+											class="accordion-chevron" 
+											style="transform: rotate({isOpen ? '180deg' : '0deg'}); transition: transform 0.3s ease;"
+										/>
+									</button>
+									
+									{#if isOpen}
+										<div class="accordion-content" transition:slide={{ duration: 300 }}>
+											{#if categoryItems.length > 0}
+												<div class="products-list">
+													{#each categoryItems as item (item.id)}
+														<div 
+															class="product-card-compact" 
+															class:unavailable={item.is_available === false}
+															class:has-image={item.image_url}
+															style={item.image_url ? `background-image: url('${item.image_url}')` : ''}
+															role="button" 
+															tabindex="0"
+															on:click={() => item.is_available !== false && item.image_url && openProductDetail(item)}
+															on:keydown={(e) => e.key === 'Enter' && item.is_available !== false && item.image_url && openProductDetail(item)}
+														>
+															{#if item.is_available === false}
+																<div class="unavailable-badge">Non disponibile</div>
+															{/if}
+															{#if item.image_url}
+																<div class="product-overlay"></div>
+															{/if}
+															<div class="product-info">
+																<div>
+																	<h3 class="product-name">{item.name}</h3>
+																	{#if item.description}
+																		<p class="product-desc">{item.description}</p>
+																	{/if}
+																</div>
+																<div class="product-price">
+																	{#if item.pricing.type === 'single'}
+																		€ {item.pricing.value.toFixed(2)}
+																	{:else}
+																		<div class="variants-compact">
+																			{#each item.pricing.variants as variant}
+																				<span class="variant-compact">
+																					{variant.name}: <strong>€ {variant.price.toFixed(2)}</strong>
+																				</span>
+																			{/each}
+																		</div>
+																	{/if}
+																</div>
+															</div>
+														</div>
+													{/each}
+												</div>
+											{:else}
+												<p class="no-products">Nessun prodotto disponibile</p>
+											{/if}
+										</div>
+									{/if}
+								</div>
+							</div>
+						{/if}
+					{/each}
+				</div>
+			{:else}
+				<div class="empty-state">
+					<p>Nessuna categoria disponibile</p>
+				</div>
+			{/if}
+		{/if}
+	</main>
 
-				<!-- Content - Stile Ricettario -->
-				<div class="modal-body">
-					<!-- Titolo con ornamento -->
-					<div class="recipe-header">
-						<div class="recipe-line"></div>
-						<h2>{selectedProduct.name}</h2>
-						<div class="recipe-line"></div>
+	<!-- Fullscreen Modal -->
+	{#if selectedProduct}
+		<div 
+			class="modal-overlay" 
+			role="button"
+			tabindex="0"
+			transition:fade={{ duration: 200 }} 
+			on:click={closeDetail}
+			on:keydown={(e) => e.key === 'Escape' && closeDetail()}
+		>
+			<div 
+				class="modal-card" 
+				role="document" 
+				on:click|stopPropagation
+				on:keydown|stopPropagation
+			>
+				<div class="modal-image-container">
+					<img src={selectedProduct.image_url} alt={selectedProduct.name} />
+					<button class="modal-close" on:click={closeDetail}>
+						<X size={24} />
+					</button>
+				</div>
+				<div class="modal-content">
+					<h2>{selectedProduct.name}</h2>
+					<p class="modal-desc">{selectedProduct.description}</p>
+					{#if selectedProduct.detailed_description}
+						<div class="modal-story">
+							<p>{selectedProduct.detailed_description}</p>
+						</div>
+					{/if}
+					
+					<div class="modal-price-section">
+						{#if selectedProduct.pricing.type === 'single'}
+							<span class="price-tag">€ {selectedProduct.pricing.value.toFixed(2)}</span>
+						{:else}
+							<div class="variants-list">
+								{#each selectedProduct.pricing.variants as variant}
+									<div class="variant-row">
+										<span>{variant.name}</span>
+										<span class="variant-price">€ {variant.price.toFixed(2)}</span>
+									</div>
+								{/each}
+							</div>
+						{/if}
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
+	
+	<!-- Popup Evento -->
+	{#if showEventoPopup && eventoCorrente}
+		<div 
+			class="modal-overlay evento-overlay" 
+			role="button"
+			tabindex="0"
+			transition:fade={{ duration: 300 }} 
+			on:click={closeEventoPopup}
+			on:keydown={(e) => e.key === 'Escape' && closeEventoPopup()}
+		>
+			<div 
+				class="evento-popup" 
+				role="document" 
+				on:click|stopPropagation
+				on:keydown|stopPropagation
+			>
+				<button class="evento-close" on:click={closeEventoPopup}>
+					<X size={24} />
+				</button>
+				
+				{#if eventoCorrente.immagine_url}
+					<div class="evento-image">
+						<img src={eventoCorrente.immagine_url} alt={eventoCorrente.titolo} />
+						{#if getBadgeText(eventoCorrente)}
+							<div class="evento-badge {getStatoEvento(eventoCorrente)}">
+								<Calendar size={16} />
+								{getBadgeText(eventoCorrente)}
+							</div>
+						{/if}
+					</div>
+				{/if}
+				
+				<div class="evento-content">
+					<h2 class="evento-title">{eventoCorrente.titolo}</h2>
+					
+					{#if eventoCorrente.sottotitolo}
+						<p class="evento-subtitle">{eventoCorrente.sottotitolo}</p>
+					{/if}
+					
+					{#if eventoCorrente.descrizione}
+						<p class="evento-desc">{eventoCorrente.descrizione}</p>
+					{/if}
+					
+					<div class="evento-dates">
+						<div class="evento-date-item">
+							<span class="date-label">Inizio:</span>
+							<span class="date-value">
+								{formatEventoDate(eventoCorrente.data_inizio)}
+							</span>
+						</div>
+						<div class="evento-date-item">
+							<span class="date-label">Fine:</span>
+							<span class="date-value">
+								{formatEventoDate(eventoCorrente.data_fine)}
+							</span>
+						</div>
 					</div>
 					
-					<!-- Ingredienti -->
-					{#if selectedProduct.description}
-						<div class="recipe-ingredients">
-							<span class="ingredients-label">Ingredienti</span>
-							<p>{selectedProduct.description}</p>
-						</div>
-					{/if}
-					
-					<!-- Storia / Note -->
-					{#if selectedProduct.detailed_description}
-						<div class="recipe-story">
-							<p>"{selectedProduct.detailed_description}"</p>
-						</div>
-					{/if}
+					<a href="tel:+393517318400" class="prenota-btn">
+						<Phone size={20} />
+						<span>Prenota ora</span>
+					</a>
 				</div>
 			</div>
 		</div>
@@ -411,1295 +585,1066 @@
 </div>
 
 <style>
-	.menu-page {
-		min-height: 100vh;
-		background: var(--bianco);
-		width: 100%;
-		max-width: 100vw;
-		overflow-x: hidden;
+	:root {
+		--primary: #154315;
+		--surface: #f4f4f4;
+		--white: #ffffff;
+		--text: #222;
+		--text-light: #666;
+		scroll-behavior: smooth;
+	}
+	
+	html {
+		scroll-behavior: smooth;
 	}
 
-	/* Header - Mobile First */
-	.menu-header {
-		background: var(--bianco);
-		border-bottom: 2px solid var(--grigio);
+	.app-container {
+		background: linear-gradient(to bottom, #f0f4f0 0%, #e8ede8 100%);
+		min-height: 100vh;
+		padding-bottom: 40px;
+	}
+
+	/* Top Bar */
+	.top-bar {
+		background: var(--white);
+		padding: 0.8rem 1rem 0.5rem;
 		position: sticky;
 		top: 0;
-		z-index: 100;
-		box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-		width: 100%;
+		z-index: 50;
+		/* Removed shadow to blend with tabs */
 	}
 
-	.header-content {
-		max-width: 1400px;
-		margin: 0 auto;
-		padding: 0.75rem 0.75rem;
+	.top-bar-row {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		width: 100%;
-		gap: 0.5rem;
-	}
-
-	@media (min-width: 768px) {
-		.header-content {
-			padding: 1.5rem 2rem;
-		}
+		margin-bottom: 0.75rem;
 	}
 
 	.logo {
 		font-family: 'Playfair Display', serif;
-		font-size: 1.2rem;
 		font-weight: 700;
-		letter-spacing: 0.1em;
-		color: var(--verde-meraki);
+		font-size: 1.5rem;
+		color: var(--primary);
 		text-decoration: none;
-		white-space: nowrap;
+		letter-spacing: 0.05em;
 	}
 
-	@media (min-width: 768px) {
-		.logo {
-			font-size: 2rem;
-			letter-spacing: 0.2em;
-		}
-	}
-
-	.back-button {
+	.back-link {
+		color: var(--text-light);
+		padding: 8px;
+		border-radius: 50%;
+		background: #f0f0f0;
 		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.search-container {
+		display: flex;
+		align-items: center;
+		background: #f2f2f2;
+		border-radius: 12px;
+		padding: 0.6rem 1rem;
+		transition: all 0.2s;
+	}
+
+	.search-container.focused {
+		background: #fff;
+		box-shadow: 0 0 0 2px var(--primary);
+	}
+
+	:global(.search-icon) {
+		color: #888;
+		margin-right: 0.5rem;
+	}
+
+	.search-container input {
+		border: none;
+		background: transparent;
+		font-size: 1rem;
+		width: 100%;
+		outline: none;
+		color: var(--text);
+	}
+
+	.clear-search {
+		background: none;
+		border: none;
+		color: #888;
+		display: flex;
+		align-items: center;
+		cursor: pointer;
+	}
+
+	/* Macro Tabs Container - App Style */
+	.macro-tabs-container {
+		display: flex;
+		background: var(--white);
+		border-bottom: 1px solid #eee;
+		position: sticky;
+		top: 66px; /* Adjust based on header height */
+		z-index: 45;
+	}
+
+	.macro-tab-btn {
+		flex: 1;
+		padding: 1rem 0.5rem;
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		position: relative;
+		text-align: center;
+		transition: all 0.2s;
+		display: flex;
+		flex-direction: column;
 		align-items: center;
 		gap: 0.3rem;
-		padding: 0.6rem 1rem;
-		background: var(--verde-meraki);
-		color: var(--bianco);
-		text-decoration: none;
-		border-radius: 50px;
-		font-weight: 500;
-		font-size: 0.85rem;
-		transition: all 0.3s ease;
 	}
-
-	@media (min-width: 768px) {
-		.back-button {
-			gap: 0.5rem;
-			padding: 0.7rem 1.5rem;
-			font-size: 1rem;
-		}
-
-		.back-button:hover {
-			background: var(--verde-light);
-			transform: translateX(-3px);
-		}
-	}
-
-	/* Banner - Mobile First */
-	.aperitivo-banner {
-		background: linear-gradient(135deg, var(--verde-meraki) 0%, var(--verde-light) 100%);
-		color: var(--bianco);
-		padding: 1rem 1rem;
-		text-align: center;
-		font-size: 0.95rem;
-		line-height: 1.5;
-		width: 100%;
-	}
-
-	@media (min-width: 768px) {
-		.aperitivo-banner {
-			padding: 1.5rem 2rem;
-			font-size: 1.05rem;
-			line-height: 1.6;
-		}
-	}
-
-	/* Filters - Mobile First */
-	.filters-section {
-		background: var(--grigio-chiaro);
-		padding: 1.5rem 0;
-		border-bottom: 2px solid var(--grigio);
-		width: 100%;
-		overflow-x: hidden;
-		max-width: 100vw;
-	}
-
-	@media (min-width: 768px) {
-		.filters-section {
-			padding: 2rem 0;
-		}
-	}
-
-	.container {
-		max-width: 1400px;
-		margin: 0 auto;
-		padding: 0 0.75rem;
-		width: 100%;
-		box-sizing: border-box;
-		overflow-x: hidden;
-	}
-
-	@media (min-width: 768px) {
-		.container {
-			padding: 0 2rem;
-		}
-	}
-
-	/* Search Expanded - Full width, stessa altezza del bottone */
-	.search-expanded {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		background: var(--bianco);
-		border: 1.5px solid var(--verde-meraki);
-		border-radius: 20px;
-		padding: 0 0.8rem;
-		height: 42px;
-		width: 100%;
-		max-width: 100%;
-		box-sizing: border-box;
-		min-width: 0;
-	}
-
-	.search-expanded :global(.search-icon-static) {
-		color: var(--verde-meraki);
-		flex-shrink: 0;
-	}
-
-	.search-input-full {
-		flex: 1;
-		border: none;
-		background: transparent;
-		font-size: 1rem;
-		outline: none;
-		padding: 0;
-		min-width: 0;
-		width: 100%;
-	}
-
-	.search-close-btn {
-		width: 26px;
-		height: 26px;
-		border: none;
-		background: var(--grigio-chiaro);
-		color: var(--grigio-scuro);
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 50%;
+	
+	.macro-icon {
+		width: 100px;
+		height: 100px;
+		object-fit: contain;
+		opacity: 0.6;
 		transition: all 0.2s;
-		flex-shrink: 0;
 	}
-
-	.search-close-btn:hover {
-		background: var(--verde-meraki);
-		color: var(--bianco);
+	
+	.macro-tab-btn.active .macro-icon {
+		opacity: 1;
+		transform: scale(1.1);
 	}
-
-	/* Categories Container */
-	.categories-container {
-		position: relative;
-		width: 100%;
-		overflow: hidden;
-	}
-
-	/* Categories Row */
-	.categories-row {
-		display: flex;
-		gap: 0.5rem;
-		overflow-x: auto;
-		-webkit-overflow-scrolling: touch;
-		scrollbar-width: none;
-		align-items: center;
-		padding-right: 25px;
-	}
-
-	.categories-row::-webkit-scrollbar {
-		display: none;
-	}
-
-	/* Scroll Hint - freccia animata */
-	.scroll-hint {
-		position: absolute;
-		right: 4px;
-		top: 50%;
-		transform: translateY(-50%);
-		font-size: 1.4rem;
+	
+	.macro-tab-text {
+		font-family: 'Playfair Display', serif;
 		font-weight: 700;
-		color: var(--verde-meraki);
-		animation: bounceRight 1.5s ease-in-out infinite;
-		pointer-events: none;
-	}
-
-	@keyframes bounceRight {
-		0%, 100% { transform: translateY(-50%) translateX(0); opacity: 1; }
-		50% { transform: translateY(-50%) translateX(-4px); opacity: 0.6; }
-	}
-
-	@media (min-width: 768px) {
-		.categories-row {
-			flex-wrap: wrap;
-			overflow-x: visible;
-			padding-right: 0;
-		}
-
-		.scroll-hint {
-			display: none;
-		}
-	}
-
-	/* Search Button (chip) */
-	.search-btn {
-		width: 42px;
-		height: 42px;
-		border: 1.5px solid var(--verde-meraki);
-		background: var(--bianco);
-		color: var(--verde-meraki);
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 50%;
-		transition: all 0.2s;
-		flex-shrink: 0;
-	}
-
-	.search-btn:hover {
-		background: var(--verde-meraki);
-		color: var(--bianco);
-	}
-
-	.cat-btn {
-		padding: 0.6rem 1.2rem;
-		border: 1.5px solid var(--verde-meraki);
-		background: var(--bianco);
-		color: var(--verde-meraki);
-		border-radius: 20px;
-		font-weight: 600;
-		font-size: 1rem;
-		cursor: pointer;
-		transition: all 0.2s;
-		white-space: nowrap;
-		flex-shrink: 0;
-	}
-
-	.cat-btn:hover {
-		background: var(--verde-light);
-		color: var(--bianco);
-	}
-
-	.cat-btn.active {
-		background: var(--verde-meraki);
-		color: var(--bianco);
-	}
-
-	/* Reset button inline */
-	.reset-btn {
-		width: 32px;
-		height: 32px;
-		border: 1.5px solid var(--grigio);
-		background: var(--bianco);
-		color: var(--grigio-scuro);
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 50%;
-		transition: all 0.2s;
-		flex-shrink: 0;
-	}
-
-	.reset-btn:hover {
-		border-color: #c00;
-		background: #fee;
-		color: #c00;
-	}
-
-	/* Subcategories Container */
-	.subcategories-container {
-		position: relative;
-		width: 100%;
-		overflow: hidden;
-		margin-top: 0.6rem;
-	}
-
-	/* Subcategories Row - SEMPRE scrolling orizzontale su UNA RIGA */
-	.subcategories-row {
-		display: flex;
-		gap: 0.5rem;
-		overflow-x: auto;
-		-webkit-overflow-scrolling: touch;
-		scrollbar-width: none;
-		align-items: center;
-		padding-right: 20px;
-		flex-wrap: nowrap !important;
-	}
-
-	.subcategories-row::-webkit-scrollbar {
-		display: none;
-	}
-
-	.subcat-btn {
-		padding: 0.45rem 0.9rem;
-		border: 1.5px solid var(--verde-light);
-		background: transparent;
-		color: var(--verde-meraki);
-		border-radius: 18px;
-		font-weight: 600;
 		font-size: 0.85rem;
-		cursor: pointer;
-		transition: all 0.2s;
-		white-space: nowrap;
-		flex-shrink: 0;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: #999;
+		transition: color 0.2s;
 	}
 
-	.subcat-btn:hover {
-		background: var(--verde-light);
-		color: var(--bianco);
+	.macro-tab-btn.active .macro-tab-text {
+		color: var(--primary);
+		transform: scale(1.05);
 	}
 
-	.subcat-btn.active {
-		background: var(--verde-light);
-		color: var(--bianco);
+	/* Active Line Indicator */
+	.macro-tab-btn::after {
+		content: '';
+		position: absolute;
+		bottom: 0;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 0;
+		height: 3px;
+		background: var(--primary);
+		transition: width 0.3s ease;
+		border-radius: 3px 3px 0 0;
 	}
 
-	/* Menu Items - Mobile First */
-	.menu-items {
-		padding: 2rem 0 3rem;
-		width: 100%;
-		overflow-x: hidden;
+	.macro-tab-btn.active::after {
+		width: 60%;
+	}
+	
+	/* Adjust subcat sticky position */
+	.subcat-bar {
+		top: 120px; /* header + macro height */
 	}
 
-	@media (min-width: 768px) {
-		.menu-items {
-			padding: 3rem 0 4rem;
-		}
-	}
-
-	.items-grid {
-		display: grid;
-		grid-template-columns: 1fr;
+	/* Menu Sections */
+	.menu-sections {
+		display: flex;
+		flex-direction: column;
 		gap: 1.5rem;
 	}
 
-	@media (min-width: 640px) {
-		.items-grid {
-			grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-		}
-	}
-
-	@media (min-width: 1024px) {
-		.items-grid {
-			grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-			gap: 2rem;
-		}
-	}
-
-	/* ========== CARD STANDARD (senza foto) ========== */
-	.menu-item {
-		background: var(--bianco);
-		border: 2px solid rgba(26, 90, 26, 0.35); /* Verde più visibile e definito */
-		border-radius: 16px;
-		padding: 1.2rem;
-		transition: all 0.3s ease;
+	/* Category Section (per categorie con sottocategorie) */
+	.category-section {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
-		position: relative;
-		overflow: hidden;
+		gap: 0.75rem;
 	}
 
-	@media (min-width: 768px) {
-		.menu-item {
-			padding: 1.5rem;
-		}
-
-		.menu-item:hover {
-			border-color: var(--verde-meraki);
-			box-shadow: 0 8px 24px rgba(21, 67, 21, 0.15);
-			transform: translateY(-5px);
-		}
+	.category-header {
+		padding: 0.5rem 0;
+		border-bottom: 2px solid var(--primary);
+		margin-bottom: 0.25rem;
 	}
 
-	/* ========== CARD PREMIUM (con foto sfondo) ========== */
-	.menu-item-premium {
-		min-height: 180px;
-		cursor: pointer;
-		border: 2px solid rgba(26, 90, 26, 0.4); /* Bordo più marcato per le card premium */
-		padding: 0;
-		background: transparent;
-	}
-
-	.menu-item-premium:hover {
-		transform: translateY(-8px) scale(1.01);
-		box-shadow: 0 16px 40px rgba(21, 67, 21, 0.25);
-	}
-
-	/* Immagine di sfondo */
-	.premium-bg {
-		position: absolute;
-		inset: 0;
-		border-radius: 16px;
-		overflow: hidden;
-	}
-
-	.premium-bg img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		transition: transform 0.7s ease;
-	}
-
-	.menu-item-premium:hover .premium-bg img {
-		transform: scale(1.08);
-	}
-
-	/* Overlay gradient scuro */
-	.premium-overlay {
-		position: absolute;
-		inset: 0;
-		background: linear-gradient(
-			to right,
-			rgba(21, 67, 21, 0.95) 0%,
-			rgba(21, 67, 21, 0.85) 35%,
-			rgba(21, 67, 21, 0.70) 60%,
-			rgba(21, 67, 21, 0.3) 100%
-		);
-	}
-
-	/* Contenuto sopra l'immagine */
-	.premium-content {
-		position: relative;
-		z-index: 2;
-		padding: 1.5rem;
-		height: 100%;
-		display: flex;
-		flex-direction: column;
-		min-height: 180px;
-	}
-
-	.premium-content .item-name {
-		color: var(--bianco);
-		text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.5);
-	}
-
-	.premium-content .item-description {
-		color: var(--bianco);
-		flex: 1;
-		text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.5);
-		line-height: 1.6;
-		font-weight: 400;
-	}
-
-	/* Footer della card premium */
-	.premium-footer {
-		margin-top: auto;
-		padding-top: 1rem;
-		border-top: 1px solid rgba(255, 255, 255, 0.2);
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 1rem;
-	}
-
-	.premium-footer .click-badge {
-		background: transparent;
-		color: var(--bianco);
-		border: 2px solid var(--bianco);
-		font-weight: 800;
-		flex-shrink: 0;
-		animation: clickPulseWhite 1.5s ease-in-out infinite;
-	}
-
-	@keyframes clickPulseWhite {
-		0%, 100% { 
-			transform: scale(1);
-			border-color: var(--bianco);
-		}
-		50% { 
-			transform: scale(1.05);
-			border-color: rgba(255, 255, 255, 0.7);
-		}
-	}
-
-	.premium-footer .item-price {
-		color: var(--bianco);
-		text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-		margin-left: auto;
-		font-size: 1rem;
-	}
-
-	.premium-footer .sizes {
-		margin-left: auto;
-	}
-
-	.premium-footer .size-name {
-		color: rgba(255, 255, 255, 0.75);
-		font-size: 0.75rem;
-	}
-
-	.premium-footer .size-price {
-		color: var(--bianco);
-		font-size: 0.95rem;
-	}
-
-	@media (min-width: 768px) {
-		.premium-content {
-			padding: 2rem;
-			min-height: 200px;
-		}
-
-		.menu-item-premium {
-			min-height: 200px;
-		}
-	}
-
-	.item-header {
-		flex: 1;
-		position: relative;
-		z-index: 1;
-	}
-
-
-	.click-badge {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		padding: 0.4rem 1rem;
-		background: transparent;
-		color: var(--verde-meraki);
-		border: 2px solid var(--verde-meraki);
-		border-radius: 20px;
-		font-size: 0.85rem;
+	.category-title {
+		font-family: 'Playfair Display', serif;
+		font-size: 1.5rem;
 		font-weight: 700;
+		color: var(--primary);
+		margin: 0;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
-		animation: clickPulse 1.5s ease-in-out infinite;
-		cursor: pointer; 
 	}
 
-	@keyframes clickPulse {
-		0%, 100% { 
-			transform: scale(1);
-			border-color: var(--verde-meraki);
-		}
-		50% { 
-			transform: scale(1.05);
-			border-color: var(--verde-light);
-		}
+	/* Accordion Container */
+	.accordion-container {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
 	}
 
-	.item-name {
-		font-family: 'Bebas Neue', sans-serif;
-		font-size: 1.6rem;
-		font-weight: 400;
-		color: var(--verde-meraki);
-		margin-bottom: 0.4rem;
+	.accordion-item {
+		background: var(--white);
+		border-radius: 16px;
+		overflow: hidden;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+		transition: all 0.3s ease;
+	}
+
+	.accordion-item:hover {
+		box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+	}
+
+	.accordion-header {
+		width: 100%;
+		padding: 1.1rem 1.3rem;
+		background: var(--white);
+		border: none;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		gap: 1rem;
+	}
+
+	.accordion-header:hover {
+		background: #f8f9fa;
+	}
+
+	.accordion-header.open {
+		background: linear-gradient(135deg, var(--primary) 0%, #1a5a1a 100%);
+	}
+
+	.accordion-header.open .accordion-title {
+		color: white;
+	}
+
+	.accordion-header.open .accordion-subtitle {
+		color: rgba(255, 255, 255, 0.9);
+	}
+
+	.accordion-header-content {
+		flex: 1;
+		text-align: left;
+	}
+
+	.accordion-title {
+		font-family: 'Playfair Display', serif;
+		font-size: 1.3rem;
+		font-weight: 700;
+		color: var(--primary);
+		margin: 0;
+		transition: color 0.3s ease;
+	}
+
+	.accordion-subtitle {
+		font-size: 0.85rem;
+		color: #777;
+		margin: 0.25rem 0 0 0;
+		transition: color 0.3s ease;
+	}
+
+	:global(.accordion-chevron) {
+		color: var(--primary);
+		flex-shrink: 0;
+	}
+
+	.accordion-header.open :global(.accordion-chevron) {
+		color: white;
+	}
+
+	.accordion-content {
+		background: linear-gradient(to bottom, #f5f9f5 0%, #f0f4f0 100%);
+		padding: 1rem;
+		border-top: 1px solid rgba(21, 67, 21, 0.08);
+	}
+
+	.products-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.65rem;
+	}
+
+	.product-card-compact {
+		background: #ffffff;
+		border-radius: 14px;
+		border: 1px solid rgba(21, 67, 21, 0.08);
+		padding: 1.2rem 1.3rem;
+		display: flex;
+		justify-content: space-between;
+		gap: 1.1rem;
+		cursor: pointer;
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		box-shadow: 0 3px 10px rgba(21, 67, 21, 0.08), 0 1px 3px rgba(0,0,0,0.04);
+		min-height: 130px;
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* Card con immagine di sfondo */
+	.product-card-compact.has-image {
+		background-size: cover;
+		background-position: center;
+		background-repeat: no-repeat;
+		min-height: 180px;
+		padding: 1.5rem;
+		border: none;
+	}
+
+	/* Overlay sfumatura verde */
+	.product-overlay {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(to right, rgba(21, 67, 21, 0.9) 0%, rgba(21, 67, 21, 0.6) 50%, rgba(21, 67, 21, 0) 100%);
+		z-index: 1;
+		transition: all 0.3s ease;
+	}
+
+	.product-card-compact.has-image:hover .product-overlay {
+		background: linear-gradient(to right, rgba(21, 67, 21, 0.85) 0%, rgba(21, 67, 21, 0.5) 60%, rgba(21, 67, 21, 0) 100%);
+	}
+
+	/* Contenuto sopra l'overlay */
+	.product-card-compact.has-image .product-info {
+		position: relative;
+		z-index: 2;
+	}
+
+	.product-card-compact.has-image .product-name {
+		color: #ffffff;
+		text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+		font-size: 1.25rem;
+	}
+
+	.product-card-compact.has-image .product-desc {
+		color: rgba(255, 255, 255, 0.95);
+		text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+	}
+
+	.product-card-compact.has-image .product-price {
+		color: #ffffff;
+		font-weight: 700;
+		font-size: 1.1rem;
+		text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+	}
+
+	.product-card-compact.has-image .variant-compact {
+		color: rgba(255, 255, 255, 0.95);
+		text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+	}
+
+	.product-card-compact.has-image .variant-compact strong {
+		color: #ffffff;
+	}
+
+	.product-card-compact::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 100%;
+		background: linear-gradient(135deg, rgba(21, 67, 21, 0.02) 0%, rgba(255,255,255,0) 50%);
+		pointer-events: none;
+		z-index: 0;
+	}
+
+	.product-card-compact.has-image::before {
+		display: none;
+	}
+
+	.product-card-compact:hover {
+		transform: translateY(-3px) scale(1.01);
+		box-shadow: 0 8px 20px rgba(21, 67, 21, 0.15), 0 3px 8px rgba(0,0,0,0.08);
+		background: #ffffff;
+		border-color: rgba(21, 67, 21, 0.15);
+	}
+
+	.product-card-compact.has-image:hover {
+		transform: translateY(-4px) scale(1.02);
+		box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+	}
+
+	.product-card-compact:hover::after {
+		opacity: 1;
+		height: 80%;
+	}
+
+	.product-card-compact:active {
+		transform: scale(0.98);
+	}
+
+	/* Unavailable product styles */
+	.product-card-compact.unavailable,
+	.product-card.unavailable {
+		opacity: 0.6;
+		cursor: not-allowed;
+		position: relative;
+	}
+
+	.product-card-compact.unavailable:hover,
+	.product-card.unavailable:hover {
+		transform: none;
+		box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+	}
+
+	.product-card-compact.unavailable .product-thumb img,
+	.product-card.unavailable .product-thumb img {
+		filter: grayscale(70%);
+	}
+
+	.unavailable-badge {
+		position: absolute;
+		top: 0.5rem;
+		right: 0.5rem;
+		background: #dc3545;
+		color: white;
+		font-size: 0.7rem;
+		font-weight: 700;
+		padding: 0.25rem 0.6rem;
+		border-radius: 6px;
 		text-transform: uppercase;
-		letter-spacing: 0.04em;
+		letter-spacing: 0.03em;
+		z-index: 5;
 	}
 
-	@media (min-width: 768px) {
-		.item-name {
-			font-size: 1.9rem;
+	/* Variants compact display */
+	.variants-compact {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+
+	.variant-compact {
+		font-size: 0.9rem;
+		color: var(--text);
+	}
+
+	.variant-compact strong {
+		color: var(--primary);
+		font-weight: 600;
+	}
+
+	.no-products {
+		text-align: center;
+		color: #999;
+		font-style: italic;
+		padding: 1rem;
+	}
+
+	/* Subcategories Grid */
+	.subcategories-grid {
+		display: grid;
+		gap: 1rem;
+		grid-template-columns: 1fr;
+		padding: 0;
+	}
+
+	@media(min-width: 640px) {
+		.subcategories-grid {
+			grid-template-columns: repeat(2, 1fr);
 		}
 	}
 
-	.item-description {
-		font-size: 1rem;
-		font-weight: 400;
-		color: var(--grigio-scuro);
-		line-height: 1.5;
-		font-style: italic;
+	.subcat-card {
+		background: var(--white);
+		border: 2px solid #eee;
+		border-radius: 16px;
+		padding: 2rem 1.5rem;
+		cursor: pointer;
+		transition: all 0.3s;
+		text-align: center;
+		min-height: 120px;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		gap: 0.5rem;
 	}
 
-	@media (min-width: 768px) {
-		.item-description {
+	.subcat-card:hover {
+		border-color: var(--primary);
+		transform: translateY(-4px);
+		box-shadow: 0 8px 20px rgba(21, 67, 21, 0.15);
+	}
+
+	.subcat-card:active {
+		transform: translateY(-2px);
+	}
+
+	.subcat-card-title {
+		font-family: 'Playfair Display', serif;
+		font-size: 1.4rem;
+		font-weight: 700;
+		color: var(--primary);
+		margin: 0;
+	}
+
+	.subcat-card-desc {
+		font-size: 0.9rem;
+		color: #666;
+		margin: 0;
+	}
+
+	/* Back Bar */
+	.back-bar {
+		background: var(--white);
+		padding: 1rem;
+		border-radius: 12px;
+		margin-bottom: 1rem;
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+	}
+
+	.back-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		background: var(--primary);
+		color: white;
+		border: none;
+		padding: 0.5rem 1rem;
+		border-radius: 8px;
+		cursor: pointer;
+		font-size: 0.9rem;
+		font-weight: 500;
+		transition: all 0.2s;
+	}
+
+	.back-btn:hover {
+		background: #1a5a1a;
+	}
+
+	.back-btn:active {
+		transform: scale(0.95);
+	}
+
+	.current-subcat {
+		font-family: 'Playfair Display', serif;
+		font-size: 1.3rem;
+		font-weight: 700;
+		color: var(--primary);
+		margin: 0;
+	}
+
+	/* Subcategory Dropdown - Collapsible */
+	.subcat-dropdown {
+		background: var(--white);
+		padding: 1rem;
+		border-bottom: 1px solid #eee;
+		box-shadow: 0 4px 12px -4px rgba(0,0,0,0.05);
+	}
+
+	.subcat-scroll {
+		display: flex;
+		flex-wrap: wrap; /* Wrap instead of scroll */
+		gap: 0.5rem;
+		justify-content: center; /* Center them */
+	}
+	
+	.subcat-btn {
+		white-space: nowrap;
+		padding: 0.5rem 1rem;
+		border-radius: 50px; /* Fully rounded pill */
+		background: var(--surface); 
+		border: 1px solid transparent;
+		color: var(--text);
+		font-weight: 500;
+		font-size: 0.85rem;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.subcat-btn:active {
+		transform: scale(0.95);
+	}
+
+	.subcat-btn.active {
+		background: var(--primary);
+		color: var(--white);
+		border-color: var(--primary);
+		box-shadow: 0 4px 10px rgba(21, 67, 21, 0.2);
+	}
+
+	/* Content */
+	.content-area {
+		padding: 1rem;
+		background: transparent;
+	}
+
+	.products-grid {
+		display: grid;
+		gap: 1rem;
+		grid-template-columns: 1fr;
+	}
+
+	@media(min-width: 640px) {
+		.products-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+		
+		.macro-card {
+			height: 160px;
+		}
+		
+		.macro-title {
 			font-size: 1.1rem;
 		}
 	}
 
-	.item-footer {
-		border-top: 1px solid var(--grigio);
-		padding-top: 1rem;
+	@media(min-width: 1024px) {
+		.products-grid {
+			grid-template-columns: repeat(3, 1fr);
+		}
+	}
+
+	/* Product Card */
+	.product-card {
+		background: var(--white);
+		border-radius: 16px;
+		padding: 1rem;
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+		cursor: pointer;
+		transition: transform 0.2s;
+		min-height: 110px;
+	}
+
+	.product-card:active {
+		transform: scale(0.98);
+	}
+
+	.product-info {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
 		position: relative;
 		z-index: 1;
 	}
 
-	.item-price {
-		font-size: 1.1rem;
-		font-weight: 600;
-		color: var(--verde-meraki);
+	.product-info > div:first-child {
+		flex: 1;
+	}
+
+	.product-price {
+		margin-top: auto;
+		font-weight: 700;
+		color: var(--primary);
+		font-size: 1.05rem;
+		padding-top: 0.3rem;
+		align-self: flex-end;
 		text-align: right;
 	}
 
-	@media (min-width: 768px) {
-		.item-price {
-			font-size: 1.2rem;
-		}
+	/* Rimuovo il vecchio stile product-thumb visto che ora l'immagine è di sfondo */
+
+	.product-name {
+		font-size: 1.15rem;
+		font-weight: 700;
+		margin-bottom: 0.3rem;
+		color: var(--primary);
+		font-family: 'Playfair Display', serif;
+		line-height: 1.3;
+		letter-spacing: 0.01em;
 	}
 
-	.sizes {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-end;
-		gap: 0.25rem;
+	.product-desc {
+		font-size: 0.85rem;
+		color: #666;
+		margin-bottom: 0.5rem;
+		line-height: 1.45;
+		max-height: none;
+		overflow: visible;
 	}
 
-	.size-badge {
-		display: flex;
-		align-items: baseline;
-		gap: 0.5rem;
-	}
-
-	.size-name {
-		font-size: 0.8rem;
-		color: var(--grigio-scuro);
-		font-weight: 500;
-	}
-
-	.size-price {
-		font-size: 1rem;
-		font-weight: 600;
-		color: var(--verde-meraki);
-	}
-
-	@media (min-width: 768px) {
-		.size-name {
-			font-size: 0.85rem;
-		}
-
-		.size-price {
-			font-size: 1.05rem;
-		}
-	}
-
-	.item-note {
-		margin-top: 0.8rem;
-		padding: 0.8rem;
-		background: var(--grigio-chiaro);
-		border-left: 3px solid var(--verde-meraki);
-		font-size: 1rem;
-		color: var(--grigio-scuro);
-		border-radius: 4px;
-	}
-
-	/* Empty State */
 	.empty-state {
 		text-align: center;
-		padding: 4rem 2rem;
-		color: var(--grigio-scuro);
+		padding: 3rem;
+		color: #888;
 	}
 
-	.empty-state svg {
-		margin-bottom: 1.5rem;
-		opacity: 0.3;
-	}
-
-	.empty-state h3 {
-		font-size: 1.8rem;
-		margin-bottom: 0.5rem;
-		color: var(--nero);
-	}
-
-	.empty-state p {
-		margin-bottom: 2rem;
-	}
-
-	.reset-button {
-		padding: 1rem 2rem;
-		background: var(--verde-meraki);
-		color: var(--bianco);
+	.reset-btn {
+		margin-top: 1rem;
+		padding: 0.5rem 1.5rem;
+		background: var(--primary);
+		color: white;
 		border: none;
-		border-radius: 50px;
-		font-weight: 600;
+		border-radius: 20px;
 		cursor: pointer;
-		transition: all 0.3s ease;
 	}
 
-	.reset-button:hover {
-		background: var(--verde-light);
-		transform: translateY(-2px);
-	}
-
-	/* Product Detail Modal - Redesigned */
+	/* Modal */
 	.modal-overlay {
 		position: fixed;
 		inset: 0;
-		background: rgba(10, 10, 10, 0.85);
-		backdrop-filter: blur(8px);
+		background: rgba(0,0,0,0.6);
+		z-index: 100;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		z-index: 10000;
-		padding: 1.5rem;
-		overflow-y: auto;
+		padding: 1rem;
+		backdrop-filter: blur(5px);
 	}
 
-	.modal-detail {
-		background: #fafaf8;
-		border-radius: 24px;
-		max-width: 420px;
+	.modal-card {
+		background: var(--white);
 		width: 100%;
-		max-height: 85vh;
+		max-width: 450px;
+		border-radius: 24px;
 		overflow: hidden;
+		max-height: 90vh;
+		display: flex;
+		flex-direction: column;
+		box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+	}
+
+	.modal-image-container {
+		height: 250px;
 		position: relative;
-		box-shadow: 
-			0 0 0 1px rgba(255, 255, 255, 0.1),
-			0 20px 50px -10px rgba(0, 0, 0, 0.5);
-		animation: modalPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+		flex-shrink: 0;
 	}
 
-	.modal-detail.modal-premium {
-		border: 2px solid var(--verde-meraki);
-	}
-
-	@keyframes modalPop {
-		0% {
-			opacity: 0;
-			transform: scale(0.9) translateY(20px);
-		}
-		100% {
-			opacity: 1;
-			transform: scale(1) translateY(0);
-		}
-	}
-
-	/* Hero section con immagine */
-	.modal-hero {
-		position: relative;
-		height: 280px;
-		overflow: hidden;
-		background: #fafaf8;
-	}
-
-	.modal-hero::before {
-		content: '';
-		position: absolute;
-		inset: 0;
-		background: 
-			radial-gradient(circle at top left, rgba(0, 0, 0, 0.6) 0%, transparent 50%),
-			radial-gradient(circle at top right, rgba(0, 0, 0, 0.6) 0%, transparent 50%);
-		z-index: 1;
-		pointer-events: none;
-	}
-
-	.hero-img {
+	.modal-image-container img {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
 	}
 
-	.hero-gradient {
-		position: absolute;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		height: 80px;
-		background: linear-gradient(
-			to bottom,
-			rgba(250, 250, 248, 0) 0%,
-			rgba(250, 250, 248, 0.4) 40%,
-			rgba(250, 250, 248, 0.85) 70%,
-			#fafaf8 100%
-		);
-		pointer-events: none;
-		z-index: 2;
-	}
-
-	/* Close button - minimal */
-	.close-modal {
-		position: absolute;
-		top: 12px;
-		right: 12px;
-		width: 36px;
-		height: 36px;
-		background: rgba(255, 255, 255, 0.9);
-		border: none;
-		border-radius: 50%;
-		color: #333;
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 20;
-		transition: all 0.2s ease;
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-	}
-
-	.close-modal:hover {
-		background: #fff;
-		transform: scale(1.1);
-	}
-
-	/* Body content - Stile Ricettario */
-	.modal-body {
-		padding: 24px 28px 32px;
-		overflow-y: auto;
-		max-height: calc(85vh - 200px);
-	}
-
-	/* Header titolo con linee decorative */
-	.recipe-header {
-		display: flex;
-		align-items: center;
-		gap: 16px;
-		margin-bottom: 28px;
-	}
-
-	.recipe-line {
-		flex: 1;
-		height: 1px;
-		background: linear-gradient(
-			to right,
-			transparent,
-			var(--verde-meraki) 20%,
-			var(--verde-meraki) 80%,
-			transparent
-		);
-		opacity: 0.4;
-	}
-
-	.modal-body h2 {
-		font-family: 'Playfair Display', serif;
-		font-size: 1.75rem;
-		font-weight: 600;
-		color: var(--verde-meraki);
-		margin: 0;
-		line-height: 1.2;
-		text-align: center;
-		letter-spacing: 0.02em;
-		white-space: nowrap;
-	}
-
-	/* Sezione ingredienti */
-	.recipe-ingredients {
-		text-align: center;
-		margin-bottom: 24px;
-	}
-
-	.ingredients-label {
-		display: inline-block;
-		font-family: 'Playfair Display', serif;
-		font-size: 0.7rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.2em;
-		color: var(--verde-light);
-		margin-bottom: 10px;
-		position: relative;
-	}
-
-	.ingredients-label::before,
-	.ingredients-label::after {
-		content: '·';
-		margin: 0 8px;
-		opacity: 0.6;
-	}
-
-	.recipe-ingredients p {
-		font-size: 1rem;
-		color: var(--grigio-scuro);
-		line-height: 1.7;
-		margin: 0;
-		font-style: italic;
-	}
-
-	/* Storia / Note dello chef */
-	.recipe-story {
-		position: relative;
-		padding: 20px 0 0;
-		margin-top: 8px;
-	}
-
-	.recipe-story::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 50%;
-		transform: translateX(-50%);
-		width: 40px;
-		height: 1px;
-		background: var(--grigio);
-	}
-
-	.recipe-story p {
-		font-family: 'Playfair Display', serif;
-		font-size: 0.95rem;
-		line-height: 1.8;
-		color: #666;
-		margin: 0;
-		text-align: center;
-		font-style: italic;
-	}
-
-	/* Mobile adjustments */
-	@media (max-width: 480px) {
-		.modal-overlay {
-			padding: 1rem;
-			align-items: center;
-		}
-
-		.modal-detail {
-			max-width: 100%;
-			max-height: 90vh;
-			border-radius: 20px;
-		}
-
-		.modal-hero {
-			height: 300px;
-		}
-
-		.modal-body {
-			padding: 20px 20px 28px;
-			max-height: calc(90vh - 300px);
-		}
-
-		.modal-body h2 {
-			font-size: 1.5rem;
-			white-space: normal;
-		}
-
-		.recipe-header {
-			gap: 12px;
-			margin-bottom: 24px;
-		}
-
-		.recipe-ingredients p {
-			font-size: 0.95rem;
-		}
-
-		.recipe-story p {
-			font-size: 0.9rem;
-		}
-	}
-
-	/* Popup Eventi */
-	.eventi-popup-overlay {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.8);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 10000;
-		padding: 1rem;
-		overflow-y: auto;
-	}
-
-	.eventi-popup {
-		background: var(--bianco);
-		border-radius: 24px;
-		max-width: 500px;
-		width: 100%;
-		position: relative;
-		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-		margin: auto;
-	}
-
-	.popup-close {
+	.modal-close {
 		position: absolute;
 		top: 1rem;
 		right: 1rem;
 		width: 40px;
 		height: 40px;
-		border-radius: 50%;
-		background: var(--grigio-chiaro);
+		background: white;
 		border: none;
+		border-radius: 50%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		cursor: pointer;
-		transition: all 0.3s ease;
-		z-index: 10;
+		box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+		color: var(--text);
 	}
 
-	.popup-close:hover {
-		background: var(--verde-meraki);
-		color: var(--bianco);
-		transform: rotate(90deg);
-	}
-
-	.popup-header {
-		text-align: center;
-		padding: 1.5rem 1.5rem 1.2rem;
-		background: var(--verde-meraki);
-		color: var(--bianco);
-		border-radius: 24px 24px 0 0;
-		position: relative;
-	}
-
-	/* Badge inline nel popup */
-	.popup-badge {
-		display: inline-block;
-		padding: 0.3rem 0.6rem;
-		color: white;
-		font-weight: 700;
-		font-size: 0.65rem;
-		letter-spacing: 0.08em;
-		border-radius: 5px;
-		text-transform: uppercase;
-	}
-
-	.popup-badge.in-corso {
-		background: #166534;
-	}
-
-	.popup-badge.in-arrivo {
-		background: #ea580c;
-	}
-
-	.popup-header h2 {
-		font-size: 1.5rem;
-		font-weight: 700;
-		margin: 0 0 0.4rem 0;
-	}
-
-	.popup-header p {
-		font-size: 0.9rem;
-		opacity: 0.9;
-		margin: 0;
-		font-weight: 400;
-	}
-
-	.popup-eventi-list {
-		padding: 1rem;
-		display: flex;
-		flex-direction: column;
-		gap: 0.8rem;
-		max-height: 50vh;
+	.modal-content {
+		padding: 1.5rem;
 		overflow-y: auto;
 	}
 
-	.popup-evento-card {
-		background: var(--grigio-chiaro);
-		border-radius: 16px;
-		overflow: hidden;
-		transition: all 0.3s ease;
-		display: flex;
-		flex-direction: column;
-	}
-
-	.popup-evento-card:hover {
-		background: #f0f0f0;
-	}
-
-	.popup-evento-image {
-		width: 100%;
-		height: 140px;
-		overflow: hidden;
-		cursor: zoom-in;
-	}
-
-	.popup-evento-image img {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		transition: transform 0.3s ease;
-	}
-
-	.popup-evento-image:hover img {
-		transform: scale(1.05);
-	}
-
-	.popup-evento-content {
-		padding: 1rem 1.2rem 1.2rem;
-		display: flex;
-		flex-direction: column;
-	}
-
-	.popup-evento-header {
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
+	.modal-content h2 {
+		font-family: 'Playfair Display', serif;
+		font-size: 1.8rem;
 		margin-bottom: 0.5rem;
-		flex-wrap: wrap;
+		color: var(--primary);
 	}
 
-	.popup-data {
-		font-size: 0.8rem;
-		color: var(--grigio-scuro);
-		font-weight: 500;
-	}
-
-	.popup-evento-content h3 {
-		color: var(--verde-meraki);
-		font-size: 1.2rem;
-		font-weight: 700;
-		margin: 0 0 0.5rem 0;
-		line-height: 1.25;
-	}
-
-	.popup-evento-content p {
+	.modal-desc {
+		font-size: 1rem;
 		color: #555;
-		font-size: 0.9rem;
 		line-height: 1.5;
-		margin: 0;
+		margin-bottom: 1.5rem;
 	}
 
-	.popup-footer {
-		padding: 1.2rem;
+	.modal-story {
+		background: #f8f9fa;
+		padding: 1rem;
+		border-radius: 12px;
+		margin-bottom: 1.5rem;
+		font-style: italic;
+		color: #666;
+		font-size: 0.9rem;
+	}
+
+	.modal-price-section {
+		border-top: 1px solid #eee;
+		padding-top: 1rem;
+	}
+
+	.price-tag {
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: var(--primary);
+	}
+
+	.variants-list {
 		display: flex;
-		gap: 0.8rem;
-		border-top: 1px solid var(--grigio);
+		flex-direction: column;
+		gap: 0.5rem;
 	}
 
-	.btn-prenota {
-		flex: 1;
-		padding: 0.9rem 1rem;
-		background: var(--verde-meraki);
-		color: var(--bianco);
-		text-decoration: none;
+	.variant-row {
+		display: flex;
+		justify-content: space-between;
+		padding: 0.5rem 0;
+		border-bottom: 1px dashed #eee;
+	}
+
+	.variant-price {
+		font-weight: 600;
+		color: var(--primary);
+	}
+
+	/* Loading state */
+	.loading-state {
 		text-align: center;
-		border-radius: 12px;
-		font-weight: 600;
-		font-size: 0.95rem;
-		transition: all 0.3s ease;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
+		padding: 3rem;
+		color: #666;
 	}
 
-	.btn-prenota:hover {
-		background: var(--verde-light);
+	.spinner {
+		width: 40px;
+		height: 40px;
+		margin: 0 auto 1rem;
+		border: 4px solid #f0f4f0;
+		border-top-color: var(--primary);
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
 	}
 
-	.btn-chiudi {
-		flex: 1;
-		padding: 0.9rem 1rem;
-		background: var(--grigio-chiaro);
-		color: var(--grigio-scuro);
-		border: none;
-		border-radius: 12px;
-		font-weight: 600;
-		font-size: 0.95rem;
-		cursor: pointer;
-		transition: all 0.3s ease;
+	@keyframes spin {
+		to { transform: rotate(360deg); }
 	}
-
-	.btn-chiudi:hover {
-		background: var(--grigio);
-		color: var(--nero);
+	
+	/* Popup Evento */
+	.evento-overlay {
+		background: rgba(0, 0, 0, 0.75);
+		backdrop-filter: blur(8px);
 	}
-
-	/* Image Zoom Modal */
-	.zoom-modal {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.95);
-		z-index: 10001;
+	
+	.evento-popup {
+		background: var(--white);
+		width: 100%;
+		max-width: 500px;
+		border-radius: 24px;
+		overflow: hidden;
+		max-height: 90vh;
 		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 2rem;
-		cursor: zoom-out;
-		animation: fadeInZoom 0.3s ease;
+		flex-direction: column;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+		position: relative;
+		animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 	}
-
-	@keyframes fadeInZoom {
-		from { opacity: 0; }
-		to { opacity: 1; }
+	
+	@keyframes slideUp {
+		from {
+			opacity: 0;
+			transform: translateY(30px) scale(0.95);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0) scale(1);
+		}
 	}
-
-	.zoom-close {
+	
+	.evento-close {
 		position: absolute;
 		top: 1rem;
 		right: 1rem;
-		width: 50px;
-		height: 50px;
-		background: rgba(255, 255, 255, 0.2);
-		border: 2px solid white;
-		color: white;
+		width: 44px;
+		height: 44px;
+		background: rgba(255, 255, 255, 0.95);
+		border: none;
 		border-radius: 50%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		cursor: pointer;
-		transition: all 0.3s ease;
-		z-index: 10002;
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+		color: var(--text);
+		z-index: 10;
+		transition: all 0.2s;
 	}
-
-	.zoom-close:hover {
-		background: rgba(255, 255, 255, 0.3);
-		transform: rotate(90deg);
+	
+	.evento-close:hover {
+		background: white;
+		transform: scale(1.1);
 	}
-
-	.zoomed-image {
-		max-width: 90vw;
-		max-height: 90vh;
-		object-fit: contain;
-		border-radius: 12px;
-		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-		animation: zoomInImage 0.3s ease;
-		cursor: default;
+	
+	.evento-close:active {
+		transform: scale(0.95);
 	}
-
-	@keyframes zoomInImage {
-		from {
-			opacity: 0;
-			transform: scale(0.8);
-		}
-		to {
-			opacity: 1;
-			transform: scale(1);
-		}
+	
+	.evento-image {
+		height: 280px;
+		position: relative;
+		flex-shrink: 0;
+		overflow: hidden;
 	}
-
-	@media (max-width: 640px) {
-		.eventi-popup {
-			margin: 0.8rem;
-			border-radius: 20px;
-			max-height: 90vh;
+	
+	.evento-image img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+	
+	.evento-badge {
+		position: absolute;
+		top: 1rem;
+		left: 1rem;
+		padding: 0.5rem 1rem;
+		border-radius: 50px;
+		font-weight: 700;
+		font-size: 0.85rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+		z-index: 5;
+	}
+	
+	.evento-badge.in_corso {
+		background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+		color: white;
+	}
+	
+	.evento-badge.in_arrivo {
+		background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+		color: white;
+	}
+	
+	.evento-content {
+		padding: 2rem 1.5rem;
+		overflow-y: auto;
+	}
+	
+	.evento-title {
+		font-family: 'Playfair Display', serif;
+		font-size: 2rem;
+		font-weight: 700;
+		margin: 0 0 0.5rem 0;
+		color: var(--primary);
+		line-height: 1.2;
+	}
+	
+	.evento-subtitle {
+		font-size: 1.1rem;
+		font-weight: 600;
+		color: #555;
+		margin: 0 0 1rem 0;
+		line-height: 1.4;
+	}
+	
+	.evento-desc {
+		font-size: 1rem;
+		color: #666;
+		line-height: 1.6;
+		margin: 0 0 1.5rem 0;
+	}
+	
+	.evento-dates {
+		background: linear-gradient(135deg, #f0f4f0 0%, #e8ede8 100%);
+		border-radius: 16px;
+		padding: 1.25rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		border: 2px solid rgba(21, 67, 21, 0.1);
+	}
+	
+	.evento-date-item {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+	}
+	
+	.date-label {
+		font-size: 0.75rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		font-weight: 700;
+		color: var(--primary);
+	}
+	
+	.date-value {
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--text);
+	}
+	
+	.prenota-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.75rem;
+		width: 100%;
+		margin-top: 1.5rem;
+		padding: 1rem 2rem;
+		background: linear-gradient(135deg, var(--primary) 0%, #1a5a1a 100%);
+		color: white;
+		border: none;
+		border-radius: 16px;
+		font-size: 1.1rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		cursor: pointer;
+		text-decoration: none;
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		box-shadow: 0 8px 20px rgba(21, 67, 21, 0.25);
+		position: relative;
+		overflow: hidden;
+	}
+	
+	.prenota-btn::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: -100%;
+		width: 100%;
+		height: 100%;
+		background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+		transition: left 0.5s;
+	}
+	
+	.prenota-btn:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 12px 30px rgba(21, 67, 21, 0.35);
+	}
+	
+	.prenota-btn:hover::before {
+		left: 100%;
+	}
+	
+	.prenota-btn:active {
+		transform: translateY(0);
+		box-shadow: 0 6px 15px rgba(21, 67, 21, 0.25);
+	}
+	
+	@media(max-width: 480px) {
+		.evento-popup {
+			max-width: 95%;
+			margin: 0 1rem;
 		}
-
-		.popup-header {
-			padding: 1.3rem 1.2rem 1rem;
-			border-radius: 20px 20px 0 0;
+		
+		.evento-title {
+			font-size: 1.6rem;
 		}
-
-		.popup-header h2 {
-			font-size: 1.4rem;
+		
+		.evento-subtitle {
+			font-size: 1rem;
 		}
-
-		.popup-header p {
-			font-size: 0.85rem;
+		
+		.evento-content {
+			padding: 1.5rem 1.25rem;
 		}
-
-		.popup-eventi-list {
-			padding: 1rem;
-			max-height: 55vh;
-			gap: 1rem;
-		}
-
-		.popup-evento-image {
-			height: 150px;
-		}
-
-		.popup-evento-content {
-			padding: 1rem 1.1rem 1.1rem;
-		}
-
-		.popup-evento-content h3 {
-			font-size: 1.15rem;
-			margin-bottom: 0.4rem;
-		}
-
-		.popup-evento-content p {
-			font-size: 0.9rem;
-			line-height: 1.5;
-		}
-
-		.popup-footer {
-			padding: 1rem;
-			gap: 0.7rem;
-		}
-
-		.btn-prenota {
-			padding: 0.8rem 1.2rem;
-			font-size: 0.95rem;
-		}
-
-		.btn-chiudi {
-			padding: 0.7rem 1.2rem;
-			font-size: 0.9rem;
+		
+		.prenota-btn {
+			font-size: 1rem;
+			padding: 0.9rem 1.5rem;
 		}
 	}
 </style>
-

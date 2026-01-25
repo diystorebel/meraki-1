@@ -15,7 +15,7 @@ export async function loadCategories() {
 		const { data, error } = await supabase
 			.from('categories')
 			.select('*')
-			.order('id', { ascending: true });
+			.order('display_order', { ascending: true });
 
 		if (error) throw error;
 
@@ -28,12 +28,19 @@ export async function loadCategories() {
 	}
 }
 
+// Macro categories enum values
+export const MACRO_CATEGORIES = [
+	{ id: 'drink', name: 'Drinks', icon: '/immagini-categorie/cocktail.png' },
+	{ id: 'wines', name: 'Birre e Vini', icon: '/immagini-categorie/birre-vini.png' },
+	{ id: 'kitchen', name: 'Cucina', icon: '/immagini-categorie/cibo.png' }
+];
+
 // Add category
-export async function addCategory(name) {
+export async function addCategory(name, macroCategory = null) {
 	try {
 		const { data, error } = await supabase
 			.from('categories')
-			.insert([{ name, subcategories: [] }])
+			.insert([{ name, subcategories: [], macro_category: macroCategory }])
 			.select()
 			.single();
 
@@ -160,4 +167,71 @@ export async function removeSubcategory(categoryId, subcategoryName) {
 export function getSubcategoriesForCategory(categories, categoryName) {
 	const cat = categories.find(c => c.name === categoryName);
 	return cat ? cat.subcategories : [];
+}
+
+// Move category up/down
+export async function moveCategoryOrder(categoryId, direction) {
+	try {
+		let categories = [];
+		categoriesStore.subscribe(cats => categories = [...cats])();
+		
+		const currentIndex = categories.findIndex(c => c.id === categoryId);
+		if (currentIndex === -1) return { success: false, error: 'Categoria non trovata' };
+		
+		const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+		if (newIndex < 0 || newIndex >= categories.length) return { success: false, error: 'Impossibile spostare' };
+		
+		// Swap display_order values
+		const currentCat = categories[currentIndex];
+		const targetCat = categories[newIndex];
+		
+		const currentOrder = currentCat.display_order;
+		const targetOrder = targetCat.display_order;
+		
+		// Update both categories
+		const { error: error1 } = await supabase
+			.from('categories')
+			.update({ display_order: targetOrder })
+			.eq('id', currentCat.id);
+			
+		const { error: error2 } = await supabase
+			.from('categories')
+			.update({ display_order: currentOrder })
+			.eq('id', targetCat.id);
+		
+		if (error1 || error2) throw error1 || error2;
+		
+		// Update local store
+		categories[currentIndex] = { ...currentCat, display_order: targetOrder };
+		categories[newIndex] = { ...targetCat, display_order: currentOrder };
+		categories.sort((a, b) => a.display_order - b.display_order);
+		categoriesStore.set(categories);
+		
+		return { success: true };
+	} catch (error) {
+		console.error('Error moving category:', error);
+		return { success: false, error: error.message };
+	}
+}
+
+// Reorder subcategories
+export async function reorderSubcategories(categoryId, newSubcategoriesOrder) {
+	try {
+		const { data, error } = await supabase
+			.from('categories')
+			.update({ subcategories: newSubcategoriesOrder })
+			.eq('id', categoryId)
+			.select()
+			.single();
+		
+		if (error) throw error;
+		
+		categoriesStore.update(cats =>
+			cats.map(cat => cat.id === categoryId ? data : cat)
+		);
+		return { success: true, data };
+	} catch (error) {
+		console.error('Error reordering subcategories:', error);
+		return { success: false, error: error.message };
+	}
 }

@@ -1,11 +1,11 @@
 <script>
 	import { isAuthenticated, login, authLoading } from '$lib/stores/authStore.js';
-	import { menuStore, updateMenuItem, addMenuItem, deleteMenuItem } from '$lib/stores/menuStore.js';
-	import { categoriesStore, addCategory, updateCategory, deleteCategory, addSubcategory, removeSubcategory } from '$lib/stores/categoriesStore.js';
+	import { menuStore, updateMenuItem, addMenuItem, deleteMenuItem, toggleItemAvailability } from '$lib/stores/menuStore.js';
+	import { categoriesStore, addCategory, updateCategory, deleteCategory, addSubcategory, removeSubcategory, MACRO_CATEGORIES, moveCategoryOrder, reorderSubcategories } from '$lib/stores/categoriesStore.js';
 	import { eventiStore, loadEventi, addEvento, updateEvento, deleteEvento, getStatoEvento, getBadgeText, eventiLoading } from '$lib/stores/eventiStore.js';
 	import { galleryStore, loadGallery, addGalleryImage, deleteGalleryImage as deleteGalleryImageFromDb, updateGalleryOrder, updateGalleryAltText, galleryLoading, themesStore, loadThemes, addTheme, updateTheme, deleteTheme, updateImageTheme, galleryByTheme } from '$lib/stores/galleryStore.js';
 	import { uploadMenuImage, deleteMenuImage, uploadGalleryImage, deleteGalleryImage } from '$lib/utils/imageUpload.js';
-	import { Lock, Package, Tag, Eye, Camera, Plus, Search, X, Edit, Trash2, Check, FileText, DollarSign, ArrowLeft, MousePointerClick, Home, Calendar, Clock, Image as ImageIcon, GripVertical, Palette, FolderOpen, AlertTriangle, Lightbulb } from 'lucide-svelte';
+	import { Lock, Package, Tag, Eye, Camera, Plus, Search, X, Edit, Trash2, Check, FileText, DollarSign, ArrowLeft, MousePointerClick, Home, Calendar, Clock, Image as ImageIcon, GripVertical, Palette, FolderOpen, AlertTriangle, Lightbulb, ChevronUp, ChevronDown } from 'lucide-svelte';
 
 	let email = '';
 	let password = '';
@@ -15,11 +15,12 @@
 	let showModal = false;
 	let searchFilter = '';
 	let categoryFilter = '';
+	let availabilityFilter = ''; // 'all', 'available', 'unavailable'
 
 	// Category management
 	let showCategoryModal = false;
 	let editingCategory = null;
-	let categoryFormData = { name: '' };
+	let categoryFormData = { name: '', macro_category: null };
 	let newSubcategory = '';
 
 	// Image handling
@@ -49,6 +50,10 @@
 	let galleryAltText = '';
 	let draggedItem = null;
 	let dragOverItem = null;
+	
+	// Subcategory drag & drop
+	let draggedSubcat = null;
+	let dragOverSubcat = null;
 	
 	// Multi-upload management
 	let pendingFiles = []; // Files selezionati in attesa di upload
@@ -116,11 +121,24 @@
 		return $menuStore.filter(item => item.category_id === categoryId).length;
 	}
 
+	// Normalizza stringa in Title Case (prima lettera di ogni parola maiuscola)
+	function toTitleCase(str) {
+		if (!str) return str;
+		return str
+			.toLowerCase()
+			.split(' ')
+			.map(word => word.charAt(0).toUpperCase() + word.slice(1))
+			.join(' ');
+	}
+
 	$: filteredMenu = $menuStore.filter(item => {
 		const matchSearch = !searchFilter || 
 			item.name.toLowerCase().includes(searchFilter.toLowerCase());
 		const matchCategory = !categoryFilter || getCategoryName(item.category_id) === categoryFilter;
-		return matchSearch && matchCategory;
+		const matchAvailability = !availabilityFilter || 
+			(availabilityFilter === 'available' && item.is_available !== false) ||
+			(availabilityFilter === 'unavailable' && item.is_available === false);
+		return matchSearch && matchCategory && matchAvailability;
 	});
 
 	async function handleLogin(e) {
@@ -160,9 +178,9 @@
 	function openCategoryModal(category = null) {
 		editingCategory = category;
 		if (category) {
-			categoryFormData = { name: category.name };
+			categoryFormData = { name: category.name, macro_category: category.macro_category || null };
 		} else {
-			categoryFormData = { name: '' };
+			categoryFormData = { name: '', macro_category: null };
 		}
 		showCategoryModal = true;
 	}
@@ -177,7 +195,7 @@
 		if (editingCategory) {
 			await updateCategory(editingCategory.id, categoryFormData);
 		} else {
-			await addCategory(categoryFormData.name);
+			await addCategory(categoryFormData.name, categoryFormData.macro_category);
 		}
 		closeCategoryModal();
 	}
@@ -212,7 +230,8 @@
 
 	async function handleAddSubcategory(categoryId) {
 		if (newSubcategory.trim()) {
-			await addSubcategory(categoryId, newSubcategory.trim());
+			// Normalizza in Title Case per evitare duplicati
+			await addSubcategory(categoryId, toTitleCase(newSubcategory.trim()));
 			newSubcategory = '';
 		}
 	}
@@ -224,6 +243,59 @@
 			() => removeSubcategory(categoryId, subcategoryName),
 			{ type: 'warning', confirmText: 'Rimuovi' }
 		);
+	}
+
+	// Move category up/down
+	async function handleMoveCategory(categoryId, direction) {
+		await moveCategoryOrder(categoryId, direction);
+	}
+
+	// Subcategory drag & drop handlers
+	function handleSubcatDragStart(subcat) {
+		draggedSubcat = subcat;
+	}
+
+	function handleSubcatDragOver(e, subcat) {
+		e.preventDefault();
+		if (draggedSubcat && draggedSubcat !== subcat) {
+			dragOverSubcat = subcat;
+		}
+	}
+
+	function handleSubcatDragLeave() {
+		dragOverSubcat = null;
+	}
+
+	async function handleSubcatDrop(categoryId, subcategories) {
+		if (!draggedSubcat || !dragOverSubcat || draggedSubcat === dragOverSubcat) {
+			draggedSubcat = null;
+			dragOverSubcat = null;
+			return;
+		}
+
+		const fromIndex = subcategories.indexOf(draggedSubcat);
+		const toIndex = subcategories.indexOf(dragOverSubcat);
+		
+		if (fromIndex === -1 || toIndex === -1) {
+			draggedSubcat = null;
+			dragOverSubcat = null;
+			return;
+		}
+
+		// Reorder array
+		const newOrder = [...subcategories];
+		newOrder.splice(fromIndex, 1);
+		newOrder.splice(toIndex, 0, draggedSubcat);
+
+		await reorderSubcategories(categoryId, newOrder);
+		
+		draggedSubcat = null;
+		dragOverSubcat = null;
+	}
+
+	function handleSubcatDragEnd() {
+		draggedSubcat = null;
+		dragOverSubcat = null;
 	}
 
 	function openEditModal(item) {
@@ -250,6 +322,8 @@
 	async function handleSave() {
 		const data = {
 			...formData,
+			// Normalizza sottocategoria in Title Case per evitare duplicati
+			subcategory: toTitleCase(formData.subcategory)
 		};
 
 		if (editingItem) {
@@ -733,12 +807,17 @@
 							<option value={cat.name}>{cat.name}</option>
 						{/each}
 					</select>
+					<select bind:value={availabilityFilter} class="filter-select">
+						<option value="">Tutti i prodotti</option>
+						<option value="available">Disponibili</option>
+						<option value="unavailable">Non disponibili</option>
+					</select>
 				</div>
 
 				<!-- Products Grid -->
 				<div class="products-grid">
 					{#each filteredMenu as item (item.id)}
-						<div class="product-card">
+						<div class="product-card" class:unavailable={item.is_available === false}>
 							{#if item.image_url}
 								<div class="product-image">
 									<img src={item.image_url} alt={item.name} />
@@ -755,6 +834,12 @@
 										<span class="click-badge">
 											<MousePointerClick size={14} />
 											Con Click
+										</span>
+									{/if}
+									{#if item.is_available === false}
+										<span class="unavailable-badge">
+											<X size={14} />
+											Non Disponibile
 										</span>
 									{/if}
 								</div>
@@ -786,6 +871,19 @@
 								</div>
 								
 								<div class="product-actions">
+									<button 
+										class="btn-availability" 
+										class:available={item.is_available !== false}
+										class:unavailable={item.is_available === false}
+										on:click={() => toggleItemAvailability(item.id, item.is_available === false)}
+										title={item.is_available !== false ? 'Segna come non disponibile' : 'Segna come disponibile'}
+									>
+										{#if item.is_available !== false}
+											<Check size={16} />
+										{:else}
+											<X size={16} />
+										{/if}
+									</button>
 									<button class="btn-card btn-edit" on:click={() => openEditModal(item)}>
 										<Edit size={16} />
 										Modifica
@@ -827,9 +925,29 @@
 				</div>
 
 				<div class="categories-list">
-					{#each $categoriesStore as category (category.id)}
+					{#each $categoriesStore as category, index (category.id)}
 						<div class="category-item">
 							<div class="category-header">
+								<!-- Frecce ordine -->
+								<div class="category-order-arrows">
+									<button 
+										class="btn-arrow" 
+										on:click={() => handleMoveCategory(category.id, 'up')}
+										disabled={index === 0}
+										title="Sposta su"
+									>
+										<ChevronUp size={18} />
+									</button>
+									<button 
+										class="btn-arrow" 
+										on:click={() => handleMoveCategory(category.id, 'down')}
+										disabled={index === $categoriesStore.length - 1}
+										title="Sposta giù"
+									>
+										<ChevronDown size={18} />
+									</button>
+								</div>
+								
 								<div class="category-info">
 									<h3>{category.name}</h3>
 									<span class="subcategories-count">
@@ -847,9 +965,22 @@
 							</div>
 							
 							{#if category.subcategories.length > 0}
-								<div class="subcategories-list">
+								<div class="subcategories-list-draggable">
+									<span class="drag-hint">Trascina per riordinare</span>
 									{#each category.subcategories as subcat}
-										<div class="subcategory-tag">
+										<div 
+											class="subcategory-tag-draggable"
+											class:dragging={draggedSubcat === subcat}
+											class:drag-over={dragOverSubcat === subcat}
+											draggable="true"
+											on:dragstart={() => handleSubcatDragStart(subcat)}
+											on:dragover={(e) => handleSubcatDragOver(e, subcat)}
+											on:dragleave={handleSubcatDragLeave}
+											on:drop={() => handleSubcatDrop(category.id, category.subcategories)}
+											on:dragend={handleSubcatDragEnd}
+											role="listitem"
+										>
+											<GripVertical size={14} class="drag-handle" />
 											<span>{subcat}</span>
 											<button class="remove-subcat" on:click={() => handleRemoveSubcategory(category.id, subcat)}>
 												<X size={14} />
@@ -1366,13 +1497,30 @@
 							<label>Nome Categoria *</label>
 							<input type="text" bind:value={categoryFormData.name} placeholder="es: Cocktails, Food..." required class="input-modern" />
 						</div>
+						
+						<div class="form-group-modern">
+							<label>Sezione Menu *</label>
+							<div class="macro-category-selector">
+								{#each MACRO_CATEGORIES as macro}
+									<button 
+										type="button"
+										class="macro-option" 
+										class:selected={categoryFormData.macro_category === macro.id}
+										on:click={() => categoryFormData.macro_category = macro.id}
+									>
+										<img src={macro.icon} alt={macro.name} class="macro-option-icon" />
+										<span>{macro.name}</span>
+									</button>
+								{/each}
+							</div>
+						</div>
 					</div>
 
 					<div class="modal-footer-modern">
 						<button class="btn-cancel-modern" on:click={closeCategoryModal}>
 							Annulla
 						</button>
-						<button class="btn-save-modern" on:click={handleSaveCategory} disabled={!categoryFormData.name.trim()}>
+						<button class="btn-save-modern" on:click={handleSaveCategory} disabled={!categoryFormData.name.trim() || !categoryFormData.macro_category}>
 							<Check size={20} />
 							{editingCategory ? 'Salva' : 'Crea'}
 						</button>
@@ -2340,6 +2488,66 @@
 		background: #c82333;
 	}
 
+	/* Availability Toggle Button */
+	.btn-availability {
+		width: 42px;
+		padding: 0.7rem;
+		border: none;
+		border-radius: 8px;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.3s ease;
+		font-weight: 600;
+	}
+
+	.btn-availability.available {
+		background: #28a745;
+		color: white;
+	}
+
+	.btn-availability.available:hover {
+		background: #218838;
+	}
+
+	.btn-availability.unavailable {
+		background: #6c757d;
+		color: white;
+	}
+
+	.btn-availability.unavailable:hover {
+		background: #5a6268;
+	}
+
+	/* Unavailable Badge */
+	.unavailable-badge {
+		background: #dc3545;
+		color: white;
+		padding: 0.3rem 0.8rem;
+		border-radius: 12px;
+		font-size: 0.75rem;
+		font-weight: 600;
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
+	}
+
+	/* Unavailable Product Card */
+	.product-card.unavailable {
+		opacity: 0.7;
+		border: 2px solid #dc3545;
+	}
+
+	.product-card.unavailable .product-image {
+		filter: grayscale(50%);
+	}
+
+	.product-card.unavailable:hover {
+		opacity: 0.85;
+		border-color: #dc3545;
+	}
+
 	/* Empty State */
 	.empty-state {
 		text-align: center;
@@ -2897,6 +3105,92 @@
 		transition: all 0.2s ease;
 	}
 
+	/* Category order arrows */
+	.category-order-arrows {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		margin-right: 1rem;
+	}
+
+	.btn-arrow {
+		width: 28px;
+		height: 28px;
+		border: 1px solid var(--grigio);
+		background: var(--bianco);
+		border-radius: 6px;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--grigio-scuro);
+		transition: all 0.2s ease;
+	}
+
+	.btn-arrow:hover:not(:disabled) {
+		background: var(--verde-meraki);
+		border-color: var(--verde-meraki);
+		color: white;
+	}
+
+	.btn-arrow:disabled {
+		opacity: 0.3;
+		cursor: not-allowed;
+	}
+
+	/* Draggable subcategories */
+	.subcategories-list-draggable {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		margin-bottom: 1rem;
+	}
+
+	.drag-hint {
+		font-size: 0.75rem;
+		color: var(--grigio-scuro);
+		margin-bottom: 0.25rem;
+		font-style: italic;
+	}
+
+	.subcategory-tag-draggable {
+		background: var(--verde-meraki);
+		color: white;
+		padding: 0.6rem 1rem;
+		border-radius: 10px;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		font-size: 0.9rem;
+		font-weight: 500;
+		cursor: grab;
+		transition: all 0.2s ease;
+		user-select: none;
+	}
+
+	.subcategory-tag-draggable:active {
+		cursor: grabbing;
+	}
+
+	.subcategory-tag-draggable.dragging {
+		opacity: 0.5;
+		transform: scale(0.98);
+	}
+
+	.subcategory-tag-draggable.drag-over {
+		background: #1a5a1a;
+		border: 2px dashed white;
+	}
+
+	.subcategory-tag-draggable :global(.drag-handle) {
+		opacity: 0.7;
+		flex-shrink: 0;
+	}
+
+	.subcategory-tag-draggable span {
+		flex: 1;
+	}
+
 	/* Eventi Section */
 	.eventi-list {
 		display: flex;
@@ -3161,6 +3455,54 @@
 
 	.modal-body-category {
 		padding: 2rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	.macro-category-selector {
+		display: flex;
+		gap: 0.75rem;
+	}
+
+	.macro-option {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 1rem 0.5rem;
+		background: var(--grigio-chiaro);
+		border: 2px solid transparent;
+		border-radius: 12px;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.macro-option:hover {
+		background: #e8e8e8;
+	}
+
+	.macro-option.selected {
+		background: rgba(21, 67, 21, 0.1);
+		border-color: var(--verde-meraki);
+	}
+
+	.macro-option-icon {
+		width: 48px;
+		height: 48px;
+		object-fit: contain;
+	}
+
+	.macro-option span {
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--grigio-scuro);
+		text-align: center;
+	}
+
+	.macro-option.selected span {
+		color: var(--verde-meraki);
 	}
 
 	/* Gallery Management - Redesigned */
