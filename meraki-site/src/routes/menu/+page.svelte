@@ -1026,7 +1026,7 @@
 	}
 
 	.variant-compact {
-		font-size: 0.9rem;
+		font-size: 0.95rem; /* Aumentato da 0.9rem */
 		color: var(--text);
 	}
 
@@ -1243,7 +1243,7 @@
 		margin-top: auto;
 		font-weight: 700;
 		color: var(--primary);
-		font-size: 1.05rem;
+		font-size: 1.15rem; /* Aumentato da 1.05rem */
 		padding-top: 0.3rem;
 		align-self: flex-end;
 		text-align: right;
@@ -1252,7 +1252,7 @@
 	/* Rimuovo il vecchio stile product-thumb visto che ora l'immagine è di sfondo */
 
 	.product-name {
-		font-size: 1.15rem;
+		font-size: 1.25rem; /* Aumentato da 1.15rem */
 		font-weight: 700;
 		margin-bottom: 0.3rem;
 		color: var(--primary);
@@ -1262,7 +1262,7 @@
 	}
 
 	.product-desc {
-		font-size: 0.85rem;
+		font-size: 0.95rem; /* Aumentato da 0.85rem */
 		color: #666;
 		margin-bottom: 0.5rem;
 		line-height: 1.45;
@@ -1431,7 +1431,7 @@
 		max-width: 500px;
 		border-radius: 24px;
 		overflow: hidden;
-		max-height: 90vh;
+		max-height: 85vh; /* Ridotto da 90vh per mobile */
 		display: flex;
 		flex-direction: column;
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -1630,6 +1630,11 @@
 		.evento-popup {
 			max-width: 95%;
 			margin: 0 1rem;
+			max-height: 80vh; /* Ridotto per mobile */
+		}
+		
+		.evento-image {
+			height: 200px; /* Ridotto da 280px per mobile */
 		}
 		
 		.evento-title {
@@ -1642,11 +1647,29 @@
 		
 		.evento-content {
 			padding: 1.5rem 1.25rem;
+			overflow-y: auto; /* Aggiungi scroll se necessario */
 		}
 		
 		.prenota-btn {
 			font-size: 1rem;
 			padding: 0.9rem 1.5rem;
+		}
+		
+		/* Aumenta font delle card prodotti su mobile */
+		.product-name {
+			font-size: 1.3rem;
+		}
+		
+		.product-desc {
+			font-size: 1rem;
+		}
+		
+		.product-price {
+			font-size: 1.2rem;
+		}
+		
+		.variant-compact {
+			font-size: 1rem;
 		}
 	}
 </style>
