@@ -94,10 +94,12 @@
 		return $menuStore.filter(item => item.category_id === categoryId);
 	}
 
-	$: {
-		categories = selectedMacro ? getCategoriesForMacro(selectedMacro) : [];
-	}
+	// Reactive: calcola categories quando cambiano store o macro selezionata
+	$: categories = selectedMacro && $categoriesStore.length > 0 
+		? getCategoriesForMacro(selectedMacro) 
+		: [];
 	
+	// Loading solo se store vuoti
 	$: isLoading = $categoriesStore.length === 0 || $menuStore.length === 0;
 
 	$: filteredItems = (() => {
@@ -182,6 +184,10 @@
 
 <svelte:head>
 	<title>Menu | Meraki</title>
+	<!-- Preload immagine evento se presente -->
+	{#if eventoCorrente?.immagine_url}
+		<link rel="preload" as="image" href={eventoCorrente.immagine_url} />
+	{/if}
 </svelte:head>
 
 <div class="app-container">
@@ -529,7 +535,12 @@
 				
 				{#if eventoCorrente.immagine_url}
 					<div class="evento-image">
-						<img src={eventoCorrente.immagine_url} alt={eventoCorrente.titolo} />
+						<img 
+							src={eventoCorrente.immagine_url} 
+							alt={eventoCorrente.titolo}
+							loading="eager"
+							decoding="async"
+						/>
 						{#if getBadgeText(eventoCorrente)}
 							<div class="evento-badge {getStatoEvento(eventoCorrente)}">
 								<Calendar size={16} />

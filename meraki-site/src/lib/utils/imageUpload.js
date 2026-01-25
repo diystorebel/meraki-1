@@ -9,12 +9,13 @@ import { supabase } from '$lib/supabaseClient';
  */
 export async function uploadMenuImage(file, fileName) {
 	try {
-		// Compression options
+		// Compression options - più aggressive per eventi
 		const options = {
-			maxSizeMB: 0.5, // Max 500KB
-			maxWidthOrHeight: 1920,
+			maxSizeMB: 0.3, // Ridotto da 0.5 a 0.3 (300KB max)
+			maxWidthOrHeight: 1200, // Ridotto da 1920 a 1200 per popup
 			useWebWorker: true,
 			fileType: 'image/webp', // Convert to WebP for best compression
+			initialQuality: 0.8, // Qualità iniziale più bassa
 		};
 
 		// Compress image
