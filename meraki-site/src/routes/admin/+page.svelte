@@ -5,7 +5,7 @@
 	import { eventiStore, loadEventi, addEvento, updateEvento, deleteEvento, getStatoEvento, getBadgeText, eventiLoading } from '$lib/stores/eventiStore.js';
 	import { galleryStore, loadGallery, addGalleryImage, deleteGalleryImage as deleteGalleryImageFromDb, updateGalleryOrder, updateGalleryAltText, galleryLoading, themesStore, loadThemes, addTheme, updateTheme, deleteTheme, updateImageTheme, galleryByTheme } from '$lib/stores/galleryStore.js';
 	import { uploadMenuImage, deleteMenuImage, uploadGalleryImage, deleteGalleryImage } from '$lib/utils/imageUpload.js';
-	import { Lock, Package, Tag, Eye, Camera, Plus, Search, X, Edit, Trash2, Check, FileText, DollarSign, ArrowLeft, MousePointerClick, Home, Calendar, Clock, Image as ImageIcon, GripVertical, Palette, FolderOpen } from 'lucide-svelte';
+	import { Lock, Package, Tag, Eye, Camera, Plus, Search, X, Edit, Trash2, Check, FileText, DollarSign, ArrowLeft, MousePointerClick, Home, Calendar, Clock, Image as ImageIcon, GripVertical, Palette, FolderOpen, AlertTriangle, Lightbulb } from 'lucide-svelte';
 
 	let email = '';
 	let password = '';
@@ -73,6 +73,7 @@
 	let confirmModalData = {
 		title: '',
 		message: '',
+		hint: '', // Suggerimento opzionale con icona lampadina
 		confirmText: 'Conferma',
 		cancelText: 'Annulla',
 		onConfirm: null,
@@ -109,6 +110,10 @@
 	function getCategoryName(categoryId) {
 		const cat = $categoriesStore.find(c => c.id === categoryId);
 		return cat ? cat.name : '';
+	}
+
+	function getProductCountForCategory(categoryId) {
+		return $menuStore.filter(item => item.category_id === categoryId).length;
 	}
 
 	$: filteredMenu = $menuStore.filter(item => {
@@ -178,12 +183,31 @@
 	}
 
 	async function handleDeleteCategory(id) {
-		showConfirm(
-			'Elimina Categoria',
-			'Sei sicuro? Questa azione eliminerà anche tutti i prodotti della categoria.',
-			() => deleteCategory(id),
-			{ type: 'danger', confirmText: 'Elimina' }
-		);
+		const category = $categoriesStore.find(c => c.id === id);
+		const productCount = getProductCountForCategory(id);
+		const categoryName = category ? category.name : 'questa categoria';
+
+		if (productCount > 0) {
+			// Categoria con prodotti: mostra warning dettagliato
+			showConfirm(
+				'Categoria non vuota',
+				`La categoria "${categoryName}" contiene ${productCount} prodott${productCount === 1 ? 'o' : 'i'}.\n\nEliminando questa categoria, i prodotti al suo interno non saranno più visibili nel menu pubblico.`,
+				() => deleteCategory(id),
+				{ 
+					type: 'warning', 
+					confirmText: 'Elimina comunque',
+					hint: 'Se vuoi solo cambiare il nome della categoria, usa "Modifica" invece di eliminarla.'
+				}
+			);
+		} else {
+			// Categoria vuota: conferma normale
+			showConfirm(
+				'Elimina Categoria',
+				`Eliminare la categoria "${categoryName}"?`,
+				() => deleteCategory(id),
+				{ type: 'danger', confirmText: 'Elimina' }
+			);
+		}
 	}
 
 	async function handleAddSubcategory(categoryId) {
@@ -546,6 +570,7 @@
 		confirmModalData = {
 			title,
 			message,
+			hint: options.hint || '',
 			confirmText: options.confirmText || 'Conferma',
 			cancelText: options.cancelText || 'Annulla',
 			type: options.type || 'danger',
@@ -1769,7 +1794,7 @@
 							{#if confirmModalData.type === 'danger'}
 								<Trash2 size={32} />
 							{:else if confirmModalData.type === 'warning'}
-								<X size={32} />
+								<AlertTriangle size={32} />
 							{:else}
 								<Check size={32} />
 							{/if}
@@ -1778,6 +1803,12 @@
 					</div>
 					<div class="modal-confirm-body">
 						<p>{confirmModalData.message}</p>
+						{#if confirmModalData.hint}
+							<div class="modal-confirm-hint">
+								<Lightbulb size={18} />
+								<span>{confirmModalData.hint}</span>
+							</div>
+						{/if}
 					</div>
 					<div class="modal-confirm-footer">
 						<button class="btn-confirm-cancel" on:click={confirmModalData.onCancel}>
@@ -3919,6 +3950,32 @@
 		font-size: 1rem;
 		line-height: 1.5;
 		margin: 0;
+		white-space: pre-line;
+	}
+
+	.modal-confirm-hint {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.75rem;
+		margin-top: 1.25rem;
+		padding: 1rem;
+		background: rgba(21, 67, 21, 0.06);
+		border-radius: 10px;
+		border-left: 3px solid var(--verde-meraki);
+		text-align: left;
+	}
+
+	.modal-confirm-hint :global(svg) {
+		flex-shrink: 0;
+		color: var(--verde-meraki);
+		margin-top: 2px;
+	}
+
+	.modal-confirm-hint span {
+		color: var(--nero);
+		font-size: 0.9rem;
+		line-height: 1.5;
+		font-weight: 500;
 	}
 
 	.modal-confirm-footer {
