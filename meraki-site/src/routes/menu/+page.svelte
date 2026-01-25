@@ -138,6 +138,16 @@
 		}
 	}
 
+	/**
+	 * Capitalizza la prima lettera della descrizione
+	 * @param {string} text - Testo da capitalizzare
+	 * @returns {string} - Testo con prima lettera maiuscola
+	 */
+	function capitalizeFirstLetter(text) {
+		if (!text || typeof text !== 'string') return text;
+		return text.charAt(0).toUpperCase() + text.slice(1);
+	}
+
 	function openProductDetail(product) {
 		if (product.image_url) selectedProduct = product;
 	}
@@ -253,7 +263,7 @@
 							<div class="product-info">
 								<h3 class="product-name">{item.name}</h3>
 								{#if item.description}
-									<p class="product-desc">{item.description}</p>
+									<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
 								{/if}
 								<div class="product-price">
 									{#if item.pricing.type === 'single'}
@@ -347,7 +357,7 @@
 																		<div>
 																			<h3 class="product-name">{item.name}</h3>
 																			{#if item.description}
-																				<p class="product-desc">{item.description}</p>
+																				<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
 																			{/if}
 																		</div>
 																		<div class="product-price">
@@ -425,7 +435,7 @@
 																<div>
 																	<h3 class="product-name">{item.name}</h3>
 																	{#if item.description}
-																		<p class="product-desc">{item.description}</p>
+																		<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
 																	{/if}
 																</div>
 																<div class="product-price">
@@ -487,10 +497,10 @@
 				</div>
 				<div class="modal-content">
 					<h2>{selectedProduct.name}</h2>
-					<p class="modal-desc">{selectedProduct.description}</p>
+					<p class="modal-desc">{capitalizeFirstLetter(selectedProduct.description)}</p>
 					{#if selectedProduct.detailed_description}
 						<div class="modal-story">
-							<p>{selectedProduct.detailed_description}</p>
+							<p>{capitalizeFirstLetter(selectedProduct.detailed_description)}</p>
 						</div>
 					{/if}
 					
