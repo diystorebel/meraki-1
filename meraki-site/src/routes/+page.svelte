@@ -42,6 +42,10 @@
 
 <svelte:head>
 	<title>Meraki - L'essenza di noi stessi</title>
+	<!-- Google Font DM Serif Text -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&display=swap" rel="stylesheet">
 </svelte:head>
 
 <!-- Splash Screen -->
@@ -373,9 +377,10 @@
 	}
 
 	.dash-card h2 {
+		font-family: 'DM Serif Text', serif;
 		font-size: 1.1rem;
 		color: var(--verde-meraki);
-		font-weight: 700;
+		font-weight: 400;
 		margin: 0;
 		position: relative;
 		z-index: 1;
