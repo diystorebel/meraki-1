@@ -130,25 +130,48 @@
 
 	function toggleAccordion(accordionId) {
 		const isCurrentlyOpen = openAccordion === accordionId;
-		const willOpen = !isCurrentlyOpen;
 		
-		openAccordion = isCurrentlyOpen ? null : accordionId;
-		
-		if (willOpen && typeof window !== 'undefined') {
-			setTimeout(() => {
-				const element = document.getElementById(`accordion-${accordionId}`);
-				if (element) {
-					const headerOffset = 100;
-					const elementPosition = element.getBoundingClientRect().top;
-					const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-					
-					window.scrollTo({
-						top: offsetPosition,
-						behavior: 'smooth'
-					});
-				}
-			}, 350);
+		// Se clicco sullo stesso accordion aperto, lo chiudo e basta
+		if (isCurrentlyOpen) {
+			openAccordion = null;
+			return;
 		}
+		
+		const newElement = document.getElementById(`accordion-${accordionId}`);
+		const oldElement = openAccordion ? document.getElementById(`accordion-${openAccordion}`) : null;
+		
+		// Calcola quanto spazio perderemo quando si chiude il vecchio accordion
+		let heightDelta = 0;
+		if (oldElement && newElement) {
+			const oldContent = oldElement.querySelector('.accordion-content');
+			if (oldContent) {
+				heightDelta = oldContent.offsetHeight;
+			}
+			
+			// Solo se il vecchio è SOPRA il nuovo, dobbiamo compensare
+			const oldTop = oldElement.getBoundingClientRect().top;
+			const newTop = newElement.getBoundingClientRect().top;
+			if (oldTop >= newTop) {
+				heightDelta = 0; // vecchio è sotto, niente da compensare
+			}
+		}
+		
+		// Apri il nuovo (chiude il vecchio)
+		openAccordion = accordionId;
+		
+		// Dopo l'animazione, scrolla all'header compensando lo spazio perso
+		setTimeout(() => {
+			if (newElement) {
+				const headerOffset = 170;
+				const elementTop = newElement.getBoundingClientRect().top;
+				const targetScroll = elementTop + window.pageYOffset - headerOffset;
+				
+				window.scrollTo({
+					top: targetScroll,
+					behavior: 'smooth'
+				});
+			}
+		}, 320); // dopo che slide transition è quasi finita (300ms)
 	}
 
 	/**
