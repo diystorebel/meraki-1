@@ -12,9 +12,9 @@
 	onMount(async () => {
 		if (browser) {
 			try {
+				// Parallel loading: auth prima, poi dati in parallelo
 				await initAuth();
-				await loadCategories();
-				await loadMenu();
+				await Promise.all([loadCategories(), loadMenu()]);
 			} catch (error) {
 				console.error('Error initializing app:', error);
 			}

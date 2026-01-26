@@ -32,12 +32,22 @@
 	let selectedMacro = MACRO_CATEGORIES[0]; // Default: Drinks
 	let openAccordion = null; // formato: "catId" o "catId_subcatName"
 	let searchTerm = '';
+	let debouncedSearchTerm = '';
+	let searchDebounceTimer = null;
 	let searchFocused = false;
 	let selectedProduct = null;
 	let categories = [];
 	let eventiVisibili = [];
 	let showEventoPopup = false;
 	let eventoCorrente = null;
+	
+	// Debounce search per evitare scatti durante digitazione
+	$: {
+		if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+		searchDebounceTimer = setTimeout(() => {
+			debouncedSearchTerm = searchTerm;
+		}, 150);
+	}
 
 	onMount(async () => {
 		// Il caricamento dati è gestito dal layout
@@ -106,8 +116,8 @@
 	$: isLoading = $categoriesStore.length === 0 || $menuStore.length === 0;
 
 	$: filteredItems = (() => {
-		if (searchTerm.trim()) {
-			return smartSearch([...$menuStore], searchTerm);
+		if (debouncedSearchTerm.trim()) {
+			return smartSearch([...$menuStore], debouncedSearchTerm);
 		}
 		return [];
 	})();
@@ -197,10 +207,14 @@
 
 <svelte:head>
 	<title>Menu | Meraki</title>
-	<!-- Google Fonts -->
+	<!-- Google Fonts - async loading -->
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+	<!-- Preload macro category icons -->
+	<link rel="preload" as="image" href="/immagini-categorie/cocktail.webp">
+	<link rel="preload" as="image" href="/immagini-categorie/birre-vini.webp">
+	<link rel="preload" as="image" href="/immagini-categorie/cibo.webp">
 	<!-- Preload immagine evento se presente -->
 	{#if eventoCorrente?.immagine_url}
 		<link rel="preload" as="image" href={eventoCorrente.immagine_url} />
@@ -898,7 +912,8 @@
 		border-radius: 16px;
 		overflow: hidden;
 		box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-		transition: all 0.3s ease;
+		transition: box-shadow 0.3s ease;
+		will-change: box-shadow;
 	}
 
 	.accordion-item:hover {
@@ -1009,8 +1024,9 @@
 
 	.product-card-compact.clickable {
 		cursor: pointer;
-		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		transition: transform 0.2s ease, box-shadow 0.2s ease;
 		user-select: none;
+		will-change: transform;
 	}
 
 	/* Card con immagine di sfondo */
@@ -1086,14 +1102,12 @@
 	}
 
 	.product-card-compact:hover {
-		transform: translateY(-3px) scale(1.01);
+		transform: translateY(-2px);
 		box-shadow: 0 8px 20px rgba(21, 67, 21, 0.15), 0 3px 8px rgba(0,0,0,0.08);
-		background: #ffffff;
-		border-color: rgba(21, 67, 21, 0.15);
 	}
 
 	.product-card-compact.has-image:hover {
-		transform: translateY(-4px) scale(1.02);
+		transform: translateY(-3px);
 		box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
 	}
 
