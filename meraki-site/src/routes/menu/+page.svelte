@@ -197,6 +197,10 @@
 
 <svelte:head>
 	<title>Menu | Meraki</title>
+	<!-- Google Font DM Serif Text -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&display=swap" rel="stylesheet">
 	<!-- Preload immagine evento se presente -->
 	{#if eventoCorrente?.immagine_url}
 		<link rel="preload" as="image" href={eventoCorrente.immagine_url} />
@@ -793,9 +797,9 @@
 	}
 
 	.category-title {
-		font-family: 'Playfair Display', serif;
+		font-family: 'DM Serif Text', serif;
 		font-size: 1.5rem;
-		font-weight: 700;
+		font-weight: 400;
 		color: var(--primary);
 		margin: 0;
 		text-transform: uppercase;
@@ -871,9 +875,9 @@
 	}
 
 	.accordion-title {
-		font-family: 'Playfair Display', serif;
+		font-family: 'DM Serif Text', serif;
 		font-size: 1.3rem;
-		font-weight: 700;
+		font-weight: 400;
 		color: var(--primary);
 		margin: 0;
 		transition: color 0.3s ease;
@@ -1285,10 +1289,10 @@
 
 	.product-name {
 		font-size: 1.25rem; /* Aumentato da 1.15rem */
-		font-weight: 700;
+		font-weight: 400;
 		margin-bottom: 0.3rem;
 		color: var(--primary);
-		font-family: 'Playfair Display', serif;
+		font-family: 'DM Serif Text', serif;
 		line-height: 1.3;
 		letter-spacing: 0.01em;
 	}
