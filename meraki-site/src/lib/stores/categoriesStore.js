@@ -95,7 +95,7 @@ export async function deleteCategory(id) {
 }
 
 // Add subcategory to category
-export async function addSubcategory(categoryId, subcategoryName) {
+export async function addSubcategory(categoryId, subcategoryName, imageUrl = null) {
 	try {
 		// Get current category
 		const { data: category, error: fetchError } = await supabase
@@ -106,7 +106,8 @@ export async function addSubcategory(categoryId, subcategoryName) {
 
 		if (fetchError) throw fetchError;
 
-		const newSubcategories = [...(category.subcategories || []), subcategoryName];
+		const newSubcategory = { name: subcategoryName, image_url: imageUrl };
+		const newSubcategories = [...(category.subcategories || []), newSubcategory];
 
 		// Update with new subcategory
 		const { data, error } = await supabase
@@ -141,7 +142,7 @@ export async function removeSubcategory(categoryId, subcategoryName) {
 		if (fetchError) throw fetchError;
 
 		const newSubcategories = (category.subcategories || [])
-			.filter(s => s !== subcategoryName);
+			.filter(s => s.name !== subcategoryName);
 
 		// Update with removed subcategory
 		const { data, error } = await supabase
@@ -214,12 +215,35 @@ export async function moveCategoryOrder(categoryId, direction) {
 	}
 }
 
-// Reorder subcategories
-export async function reorderSubcategories(categoryId, newSubcategoriesOrder) {
+// Move subcategory up or down
+export async function moveSubcategoryOrder(categoryId, subcategoryName, direction) {
 	try {
+		// Get current category
+		const { data: category, error: fetchError } = await supabase
+			.from('categories')
+			.select('subcategories')
+			.eq('id', categoryId)
+			.single();
+
+		if (fetchError) throw fetchError;
+
+		const subcategories = [...(category.subcategories || [])];
+		const currentIndex = subcategories.findIndex(s => s.name === subcategoryName);
+		
+		if (currentIndex === -1) return { success: false, error: 'Sottocategoria non trovata' };
+		
+		const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+		if (newIndex < 0 || newIndex >= subcategories.length) {
+			return { success: false, error: 'Impossibile spostare' };
+		}
+		
+		// Swap elements
+		[subcategories[currentIndex], subcategories[newIndex]] = [subcategories[newIndex], subcategories[currentIndex]];
+		
+		// Update database
 		const { data, error } = await supabase
 			.from('categories')
-			.update({ subcategories: newSubcategoriesOrder })
+			.update({ subcategories })
 			.eq('id', categoryId)
 			.select()
 			.single();
@@ -231,7 +255,50 @@ export async function reorderSubcategories(categoryId, newSubcategoriesOrder) {
 		);
 		return { success: true, data };
 	} catch (error) {
-		console.error('Error reordering subcategories:', error);
+		console.error('Error moving subcategory:', error);
+		return { success: false, error: error.message };
+	}
+}
+
+// Update subcategory (name and/or image)
+export async function updateSubcategory(categoryId, oldName, newData) {
+	try {
+		// Get current category
+		const { data: category, error: fetchError } = await supabase
+			.from('categories')
+			.select('subcategories')
+			.eq('id', categoryId)
+			.single();
+
+		if (fetchError) throw fetchError;
+
+		const subcategories = [...(category.subcategories || [])];
+		const index = subcategories.findIndex(s => s.name === oldName);
+		
+		if (index === -1) return { success: false, error: 'Sottocategoria non trovata' };
+		
+		// Update subcategory
+		subcategories[index] = {
+			...subcategories[index],
+			...newData
+		};
+		
+		// Update database
+		const { data, error } = await supabase
+			.from('categories')
+			.update({ subcategories })
+			.eq('id', categoryId)
+			.select()
+			.single();
+		
+		if (error) throw error;
+		
+		categoriesStore.update(cats =>
+			cats.map(cat => cat.id === categoryId ? data : cat)
+		);
+		return { success: true, data };
+	} catch (error) {
+		console.error('Error updating subcategory:', error);
 		return { success: false, error: error.message };
 	}
 }

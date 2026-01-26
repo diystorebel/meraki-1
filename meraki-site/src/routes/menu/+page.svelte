@@ -74,10 +74,13 @@
 		const usedSubcats = new Set(items.map(i => i.subcategory).filter(Boolean));
 		
 		// Mantieni l'ordine definito, filtrando solo quelle con prodotti
-		const orderedUsed = definedOrder.filter(sub => usedSubcats.has(sub));
+		// subcategories è ora un array di oggetti {name, image_url}
+		const orderedUsed = definedOrder.filter(sub => usedSubcats.has(sub.name));
 		
 		// Aggiungi eventuali sottocategorie usate ma non definite nell'ordine (alla fine)
-		const notInOrder = [...usedSubcats].filter(sub => !definedOrder.includes(sub));
+		const notInOrder = [...usedSubcats].filter(subcatName => 
+			!definedOrder.some(sub => sub.name === subcatName)
+		).map(name => ({ name, image_url: null }));
 		
 		return [...orderedUsed, ...notInOrder];
 	}
@@ -311,18 +314,20 @@
 								
 								<div class="accordion-container">
 									{#each usedSubcategories as subcat}
-										{@const accordionId = `${cat.id}_${subcat}`}
+										{@const accordionId = `${cat.id}_${subcat.name}`}
 										{@const isOpen = openAccordion === accordionId}
-										{@const subcatItems = getItemsForSubcategory(cat.id, subcat)}
+										{@const subcatItems = getItemsForSubcategory(cat.id, subcat.name)}
 										
 										<div class="accordion-item" id="accordion-{accordionId}">
 											<button 
 												class="accordion-header" 
 												class:open={isOpen}
+												class:has-image={subcat.image_url}
+												style={subcat.image_url ? `background-image: linear-gradient(to right, rgba(21, 67, 21, 0.95) 0%, rgba(21, 67, 21, 0.85) 60%, rgba(21, 67, 21, 0.7) 100%), url('${subcat.image_url}'); background-size: cover; background-position: center;` : ''}
 												on:click={() => toggleAccordion(accordionId)}
 											>
 												<div class="accordion-header-content">
-													<h3 class="accordion-title">{subcat}</h3>
+													<h3 class="accordion-title">{subcat.name}</h3>
 													<p class="accordion-subtitle">{subcatItems.length} prodotti</p>
 												</div>
 												<ChevronDown 
@@ -825,6 +830,8 @@
 		cursor: pointer;
 		transition: all 0.3s ease;
 		gap: 1rem;
+		position: relative;
+		overflow: hidden;
 	}
 
 	.accordion-header:hover {
@@ -833,6 +840,26 @@
 
 	.accordion-header.open {
 		background: linear-gradient(135deg, var(--primary) 0%, #1a5a1a 100%);
+	}
+
+	/* Accordion con immagine di sfondo */
+	.accordion-header.has-image {
+		min-height: 60px;
+		padding: 1.5rem 1.3rem;
+		background-position: center !important;
+		background-size: contain !important;
+		background-repeat: no-repeat !important;
+	}
+
+	.accordion-header.has-image .accordion-title,
+	.accordion-header.has-image .accordion-subtitle {
+		color: white;
+		text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+	}
+
+	.accordion-header.has-image :global(.accordion-chevron) {
+		color: white;
+		filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
 	}
 
 	.accordion-header.open .accordion-title {

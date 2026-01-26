@@ -1,7 +1,7 @@
 <script>
 	import { isAuthenticated, login, authLoading } from '$lib/stores/authStore.js';
 	import { menuStore, updateMenuItem, addMenuItem, deleteMenuItem, toggleItemAvailability } from '$lib/stores/menuStore.js';
-	import { categoriesStore, addCategory, updateCategory, deleteCategory, addSubcategory, removeSubcategory, MACRO_CATEGORIES, moveCategoryOrder, reorderSubcategories } from '$lib/stores/categoriesStore.js';
+	import { categoriesStore, addCategory, updateCategory, deleteCategory, addSubcategory, removeSubcategory, MACRO_CATEGORIES, moveCategoryOrder, moveSubcategoryOrder, updateSubcategory } from '$lib/stores/categoriesStore.js';
 	import { eventiStore, loadEventi, addEvento, updateEvento, deleteEvento, getStatoEvento, getBadgeText, eventiLoading } from '$lib/stores/eventiStore.js';
 	import { galleryStore, loadGallery, addGalleryImage, deleteGalleryImage as deleteGalleryImageFromDb, updateGalleryOrder, updateGalleryAltText, galleryLoading, themesStore, loadThemes, addTheme, updateTheme, deleteTheme, updateImageTheme, galleryByTheme } from '$lib/stores/galleryStore.js';
 	import { uploadMenuImage, deleteMenuImage, uploadGalleryImage, deleteGalleryImage } from '$lib/utils/imageUpload.js';
@@ -51,9 +51,12 @@
 	let draggedItem = null;
 	let dragOverItem = null;
 	
-	// Subcategory drag & drop
-	let draggedSubcat = null;
-	let dragOverSubcat = null;
+	// Subcategory management
+	let showSubcategoryModal = false;
+	let editingSubcategory = null;
+	let editingSubcategoryCategory = null;
+	let subcategoryFormData = { name: '', image_url: null };
+	let availableSubcategoryImages = [];
 	
 	// Multi-upload management
 	let pendingFiles = []; // Files selezionati in attesa di upload
@@ -231,7 +234,7 @@
 	async function handleAddSubcategory(categoryId) {
 		if (newSubcategory.trim()) {
 			// Normalizza in Title Case per evitare duplicati
-			await addSubcategory(categoryId, toTitleCase(newSubcategory.trim()));
+			await addSubcategory(categoryId, toTitleCase(newSubcategory.trim()), null);
 			newSubcategory = '';
 		}
 	}
@@ -250,52 +253,65 @@
 		await moveCategoryOrder(categoryId, direction);
 	}
 
-	// Subcategory drag & drop handlers
-	function handleSubcatDragStart(subcat) {
-		draggedSubcat = subcat;
+	// Move subcategory up/down
+	async function handleMoveSubcategory(categoryId, subcategoryName, direction) {
+		await moveSubcategoryOrder(categoryId, subcategoryName, direction);
 	}
 
-	function handleSubcatDragOver(e, subcat) {
-		e.preventDefault();
-		if (draggedSubcat && draggedSubcat !== subcat) {
-			dragOverSubcat = subcat;
+	// Open edit subcategory modal
+	function openEditSubcategoryModal(category, subcategory) {
+		editingSubcategory = subcategory;
+		editingSubcategoryCategory = category;
+		subcategoryFormData = {
+			name: subcategory.name,
+			image_url: subcategory.image_url || null
+		};
+		loadAvailableSubcategoryImages();
+		showSubcategoryModal = true;
+	}
+
+	// Load available subcategory images from static folder
+	function loadAvailableSubcategoryImages() {
+		// Lista statica delle immagini disponibili
+		availableSubcategoryImages = [
+			{ name: 'After Dinner', path: '/immagini-sottocategorie/after dinner.png' },
+			{ name: 'Amari', path: '/immagini-sottocategorie/amari.png' },
+			{ name: 'Analcolici', path: '/immagini-sottocategorie/analcolici.png' },
+			{ name: 'Bibite', path: '/immagini-sottocategorie/bibite.png' },
+			{ name: 'Esotici', path: '/immagini-sottocategorie/esotici.png' },
+			{ name: 'Gin Tonic', path: '/immagini-sottocategorie/gin tonic.png' },
+			{ name: 'Pre Dinner', path: '/immagini-sottocategorie/pre dinner.png' },
+			{ name: 'Rum', path: '/immagini-sottocategorie/rum.png' },
+			{ name: 'Speciali', path: '/immagini-sottocategorie/speciali.png' },
+			{ name: 'Whisky', path: '/immagini-sottocategorie/whiksy.png' }
+		];
+	}
+
+	// Save subcategory changes
+	async function handleSaveSubcategory() {
+		if (!subcategoryFormData.name.trim()) return;
+
+		const result = await updateSubcategory(
+			editingSubcategoryCategory.id,
+			editingSubcategory.name,
+			{
+				name: toTitleCase(subcategoryFormData.name.trim()),
+				image_url: subcategoryFormData.image_url
+			}
+		);
+
+		if (result.success) {
+			closeSubcategoryModal();
+		} else {
+			showError('Errore aggiornamento', result.error);
 		}
 	}
 
-	function handleSubcatDragLeave() {
-		dragOverSubcat = null;
-	}
-
-	async function handleSubcatDrop(categoryId, subcategories) {
-		if (!draggedSubcat || !dragOverSubcat || draggedSubcat === dragOverSubcat) {
-			draggedSubcat = null;
-			dragOverSubcat = null;
-			return;
-		}
-
-		const fromIndex = subcategories.indexOf(draggedSubcat);
-		const toIndex = subcategories.indexOf(dragOverSubcat);
-		
-		if (fromIndex === -1 || toIndex === -1) {
-			draggedSubcat = null;
-			dragOverSubcat = null;
-			return;
-		}
-
-		// Reorder array
-		const newOrder = [...subcategories];
-		newOrder.splice(fromIndex, 1);
-		newOrder.splice(toIndex, 0, draggedSubcat);
-
-		await reorderSubcategories(categoryId, newOrder);
-		
-		draggedSubcat = null;
-		dragOverSubcat = null;
-	}
-
-	function handleSubcatDragEnd() {
-		draggedSubcat = null;
-		dragOverSubcat = null;
+	function closeSubcategoryModal() {
+		showSubcategoryModal = false;
+		editingSubcategory = null;
+		editingSubcategoryCategory = null;
+		subcategoryFormData = { name: '', image_url: null };
 	}
 
 	function openEditModal(item) {
@@ -965,26 +981,47 @@
 							</div>
 							
 							{#if category.subcategories.length > 0}
-								<div class="subcategories-list-draggable">
-									<span class="drag-hint">Trascina per riordinare</span>
-									{#each category.subcategories as subcat}
-										<div 
-											class="subcategory-tag-draggable"
-											class:dragging={draggedSubcat === subcat}
-											class:drag-over={dragOverSubcat === subcat}
-											draggable="true"
-											on:dragstart={() => handleSubcatDragStart(subcat)}
-											on:dragover={(e) => handleSubcatDragOver(e, subcat)}
-											on:dragleave={handleSubcatDragLeave}
-											on:drop={() => handleSubcatDrop(category.id, category.subcategories)}
-											on:dragend={handleSubcatDragEnd}
-											role="listitem"
-										>
-											<GripVertical size={14} class="drag-handle" />
-											<span>{subcat}</span>
-											<button class="remove-subcat" on:click={() => handleRemoveSubcategory(category.id, subcat)}>
-												<X size={14} />
-											</button>
+								<div class="subcategories-list">
+									{#each category.subcategories as subcat, index}
+										<div class="subcategory-item">
+											<div class="subcategory-info">
+												{#if subcat.image_url}
+													<img src={subcat.image_url} alt={subcat.name} class="subcat-thumb" />
+												{/if}
+												<span class="subcat-name">{subcat.name}</span>
+											</div>
+											<div class="subcategory-actions">
+												<button 
+													class="btn-subcat-move" 
+													on:click={() => handleMoveSubcategory(category.id, subcat.name, 'up')}
+													disabled={index === 0}
+													title="Sposta su"
+												>
+													<ChevronUp size={16} />
+												</button>
+												<button 
+													class="btn-subcat-move" 
+													on:click={() => handleMoveSubcategory(category.id, subcat.name, 'down')}
+													disabled={index === category.subcategories.length - 1}
+													title="Sposta giù"
+												>
+													<ChevronDown size={16} />
+												</button>
+												<button 
+													class="btn-subcat-edit" 
+													on:click={() => openEditSubcategoryModal(category, subcat)}
+													title="Modifica"
+												>
+													<Edit size={14} />
+												</button>
+												<button 
+													class="btn-subcat-remove" 
+													on:click={() => handleRemoveSubcategory(category.id, subcat.name)}
+													title="Rimuovi"
+												>
+													<X size={14} />
+												</button>
+											</div>
 										</div>
 									{/each}
 								</div>
@@ -1523,6 +1560,81 @@
 						<button class="btn-save-modern" on:click={handleSaveCategory} disabled={!categoryFormData.name.trim() || !categoryFormData.macro_category}>
 							<Check size={20} />
 							{editingCategory ? 'Salva' : 'Crea'}
+						</button>
+					</div>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Subcategory Modal -->
+		{#if showSubcategoryModal}
+			<div class="modal-overlay" on:click={closeSubcategoryModal}>
+				<div class="modal-subcategory" on:click|stopPropagation>
+					<div class="modal-header-modern">
+						<div>
+							<h2>
+								<Edit size={28} class="inline-icon" />
+								Modifica Sottocategoria
+							</h2>
+							<p class="modal-subtitle">Categoria: {editingSubcategoryCategory?.name}</p>
+						</div>
+						<button class="close-btn-modern" on:click={closeSubcategoryModal}>
+							<X size={24} />
+						</button>
+					</div>
+					
+					<div class="modal-body-subcategory">
+						<div class="form-group-modern">
+							<label>Nome Sottocategoria *</label>
+							<input 
+								type="text" 
+								bind:value={subcategoryFormData.name} 
+								placeholder="es: Gin Tonic, Pre Dinner..." 
+								required 
+								class="input-modern" 
+							/>
+						</div>
+						
+						<div class="form-group-modern">
+							<label>Immagine</label>
+							<div class="image-selector">
+								<button 
+									type="button"
+									class="image-option no-image" 
+									class:selected={!subcategoryFormData.image_url}
+									on:click={() => subcategoryFormData.image_url = null}
+								>
+									<div class="no-image-placeholder">
+										<ImageIcon size={32} />
+									</div>
+									<span>Nessuna</span>
+								</button>
+								{#each availableSubcategoryImages as img}
+									<button 
+										type="button"
+										class="image-option" 
+										class:selected={subcategoryFormData.image_url === img.path}
+										on:click={() => subcategoryFormData.image_url = img.path}
+									>
+										<img src={img.path} alt={img.name} />
+										<span>{img.name}</span>
+									</button>
+								{/each}
+							</div>
+						</div>
+					</div>
+
+					<div class="modal-footer-modern">
+						<button class="btn-cancel-modern" on:click={closeSubcategoryModal}>
+							Annulla
+						</button>
+						<button 
+							class="btn-save-modern" 
+							on:click={handleSaveSubcategory} 
+							disabled={!subcategoryFormData.name.trim()}
+						>
+							<Check size={20} />
+							Salva
 						</button>
 					</div>
 				</div>
@@ -3079,31 +3191,6 @@
 		margin-bottom: 1rem;
 	}
 
-	.subcategory-tag {
-		background: var(--verde-meraki);
-		color: white;
-		padding: 0.5rem 1rem;
-		border-radius: 20px;
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		font-size: 0.9rem;
-		font-weight: 500;
-	}
-
-	.remove-subcat {
-		background: rgba(255, 255, 255, 0.3);
-		border: none;
-		border-radius: 50%;
-		width: 20px;
-		height: 20px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		cursor: pointer;
-		color: white;
-		transition: all 0.2s ease;
-	}
 
 	/* Category order arrows */
 	.category-order-arrows {
@@ -3138,57 +3225,96 @@
 		cursor: not-allowed;
 	}
 
-	/* Draggable subcategories */
-	.subcategories-list-draggable {
+	/* Subcategories List */
+	.subcategories-list {
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
 		margin-bottom: 1rem;
 	}
 
-	.drag-hint {
-		font-size: 0.75rem;
-		color: var(--grigio-scuro);
-		margin-bottom: 0.25rem;
-		font-style: italic;
-	}
-
-	.subcategory-tag-draggable {
-		background: var(--verde-meraki);
-		color: white;
-		padding: 0.6rem 1rem;
+	.subcategory-item {
+		background: #f8f9fa;
+		border: 1px solid #e0e0e0;
+		padding: 0.75rem;
 		border-radius: 10px;
 		display: flex;
 		align-items: center;
+		justify-content: space-between;
 		gap: 0.75rem;
-		font-size: 0.9rem;
-		font-weight: 500;
-		cursor: grab;
 		transition: all 0.2s ease;
-		user-select: none;
 	}
 
-	.subcategory-tag-draggable:active {
-		cursor: grabbing;
+	.subcategory-item:hover {
+		background: #ffffff;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 	}
 
-	.subcategory-tag-draggable.dragging {
-		opacity: 0.5;
-		transform: scale(0.98);
+	.subcategory-info {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		flex: 1;
+		min-width: 0;
 	}
 
-	.subcategory-tag-draggable.drag-over {
-		background: #1a5a1a;
-		border: 2px dashed white;
-	}
-
-	.subcategory-tag-draggable :global(.drag-handle) {
-		opacity: 0.7;
+	.subcat-thumb {
+		width: 40px;
+		height: 40px;
+		border-radius: 8px;
+		object-fit: cover;
 		flex-shrink: 0;
 	}
 
-	.subcategory-tag-draggable span {
-		flex: 1;
+	.subcat-name {
+		font-size: 0.95rem;
+		font-weight: 600;
+		color: var(--verde-meraki);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.subcategory-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		flex-shrink: 0;
+	}
+
+	.btn-subcat-move,
+	.btn-subcat-edit,
+	.btn-subcat-remove {
+		padding: 0.4rem;
+		border: none;
+		background: transparent;
+		border-radius: 6px;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--grigio-scuro);
+	}
+
+	.btn-subcat-move:hover:not(:disabled) {
+		background: var(--verde-meraki);
+		color: white;
+	}
+
+	.btn-subcat-edit:hover {
+		background: #3b82f6;
+		color: white;
+	}
+
+	.btn-subcat-remove:hover {
+		background: #ef4444;
+		color: white;
+	}
+
+	.btn-subcat-move:disabled {
+		opacity: 0.3;
+		cursor: not-allowed;
 	}
 
 	/* Eventi Section */
@@ -3503,6 +3629,122 @@
 
 	.macro-option.selected span {
 		color: var(--verde-meraki);
+	}
+
+	/* Subcategory Modal */
+	.modal-subcategory {
+		background: var(--bianco);
+		border-radius: 24px;
+		width: 100%;
+		max-width: 600px;
+		max-height: 85vh;
+		overflow-y: auto;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+		animation: slideUp 0.3s ease;
+	}
+
+	.modal-body-subcategory {
+		padding: 2rem;
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	.modal-subtitle {
+		font-size: 0.9rem;
+		color: var(--grigio-scuro);
+		margin-top: 0.25rem;
+		font-weight: 400;
+	}
+
+	.image-selector {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+		gap: 1rem;
+		max-height: 400px;
+		overflow-y: auto;
+		padding: 0.5rem;
+		border: 1px solid #e0e0e0;
+		border-radius: 12px;
+		background: #f8f9fa;
+	}
+
+	.image-option {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.75rem;
+		background: white;
+		border: 2px solid transparent;
+		border-radius: 12px;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.image-option:hover {
+		border-color: var(--verde-meraki);
+		transform: scale(1.05);
+	}
+
+	.image-option.selected {
+		border-color: var(--verde-meraki);
+		background: rgba(21, 67, 21, 0.05);
+		box-shadow: 0 4px 12px rgba(21, 67, 21, 0.2);
+	}
+
+	.image-option img {
+		width: 100%;
+		height: 80px;
+		object-fit: cover;
+		border-radius: 8px;
+	}
+
+	.image-option span {
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--grigio-scuro);
+		text-align: center;
+		line-height: 1.2;
+	}
+
+	.image-option.selected span {
+		color: var(--verde-meraki);
+		font-weight: 600;
+	}
+
+	.no-image-placeholder {
+		width: 100%;
+		height: 80px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--grigio-chiaro);
+		border-radius: 8px;
+		color: var(--grigio-scuro);
+	}
+
+	/* Mobile responsive */
+	@media (max-width: 640px) {
+		.modal-subcategory {
+			max-width: 95%;
+			margin: 1rem;
+		}
+
+		.image-selector {
+			grid-template-columns: repeat(2, 1fr);
+			max-height: 300px;
+		}
+
+		.subcategory-actions {
+			gap: 0.15rem;
+		}
+
+		.btn-subcat-move,
+		.btn-subcat-edit,
+		.btn-subcat-remove {
+			padding: 0.35rem;
+		}
 	}
 
 	/* Gallery Management - Redesigned */
