@@ -256,36 +256,58 @@
 			{#if filteredItems.length > 0}
 				<div class="products-grid">
 					{#each filteredItems as item (item.id)}
-						<div 
-							class="product-card" 
-							class:unavailable={item.is_available === false}
-							role="button" 
-							tabindex="0"
-							on:click={() => item.is_available !== false && item.image_url && openProductDetail(item)}
-							on:keydown={(e) => e.key === 'Enter' && item.is_available !== false && item.image_url && openProductDetail(item)}
-						>
-							{#if item.is_available === false}
-								<div class="unavailable-badge">Non disponibile</div>
-							{/if}
-							<div class="product-info">
-								<h3 class="product-name">{item.name}</h3>
-								{#if item.description}
-									<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
+						{#if item.image_url}
+							<div 
+								class="product-card clickable" 
+								class:unavailable={item.is_available === false}
+								role="button"
+								tabindex="0"
+								on:click={() => item.is_available !== false && openProductDetail(item)}
+								on:keydown={(e) => e.key === 'Enter' && item.is_available !== false && openProductDetail(item)}
+							>
+								{#if item.is_available === false}
+									<div class="unavailable-badge">Non disponibile</div>
 								{/if}
-								<div class="product-price">
-									{#if item.pricing.type === 'single'}
-										€ {item.pricing.value.toFixed(2)}
-									{:else}
-										Da € {Math.min(...item.pricing.variants.map(v => v.price)).toFixed(2)}
+								<div class="product-info">
+									<h3 class="product-name">{item.name}</h3>
+									{#if item.description}
+										<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
 									{/if}
+									<div class="product-price">
+										{#if item.pricing.type === 'single'}
+											€ {item.pricing.value.toFixed(2)}
+										{:else}
+											Da € {Math.min(...item.pricing.variants.map(v => v.price)).toFixed(2)}
+										{/if}
+									</div>
 								</div>
-							</div>
-							{#if item.image_url}
 								<div class="product-thumb">
 									<img src={item.image_url} alt={item.name} loading="lazy" />
 								</div>
-							{/if}
-						</div>
+							</div>
+						{:else}
+							<div 
+								class="product-card" 
+								class:unavailable={item.is_available === false}
+							>
+								{#if item.is_available === false}
+									<div class="unavailable-badge">Non disponibile</div>
+								{/if}
+								<div class="product-info">
+									<h3 class="product-name">{item.name}</h3>
+									{#if item.description}
+										<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
+									{/if}
+									<div class="product-price">
+										{#if item.pricing.type === 'single'}
+											€ {item.pricing.value.toFixed(2)}
+										{:else}
+											Da € {Math.min(...item.pricing.variants.map(v => v.price)).toFixed(2)}
+										{/if}
+									</div>
+								</div>
+							</div>
+						{/if}
 					{/each}
 				</div>
 			{:else}
@@ -349,44 +371,73 @@
 													{#if subcatItems.length > 0}
 														<div class="products-list">
 															{#each subcatItems as item (item.id)}
-																<div 
-																	class="product-card-compact" 
-																	class:unavailable={item.is_available === false}
-																	class:has-image={item.image_url}
-																	style={item.image_url ? `background-image: url('${item.image_url}')` : ''}
-																	role="button" 
-																	tabindex="0"
-																	on:click={() => item.is_available !== false && item.image_url && openProductDetail(item)}
-																	on:keydown={(e) => e.key === 'Enter' && item.is_available !== false && item.image_url && openProductDetail(item)}
-																>
-																	{#if item.is_available === false}
-																		<div class="unavailable-badge">Non disponibile</div>
-																	{/if}
-																	{#if item.image_url}
+																{#if item.image_url}
+																	<div 
+																		class="product-card-compact has-image clickable" 
+																		class:unavailable={item.is_available === false}
+																		style="background-image: url('{item.image_url}')"
+																		role="button"
+																		tabindex="0"
+																		on:click={() => item.is_available !== false && openProductDetail(item)}
+																		on:keydown={(e) => e.key === 'Enter' && item.is_available !== false && openProductDetail(item)}
+																	>
+																		{#if item.is_available === false}
+																			<div class="unavailable-badge">Non disponibile</div>
+																		{/if}
 																		<div class="product-overlay"></div>
-																	{/if}
-																	<div class="product-info">
-																		<div>
-																			<h3 class="product-name">{item.name}</h3>
-																			{#if item.description}
-																				<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
-																			{/if}
-																		</div>
-																		<div class="product-price">
-																			{#if item.pricing.type === 'single'}
-																				€ {item.pricing.value.toFixed(2)}
-																			{:else}
-																				<div class="variants-compact">
-																					{#each item.pricing.variants as variant}
-																						<span class="variant-compact">
-																							{variant.name}: <strong>€ {variant.price.toFixed(2)}</strong>
-																						</span>
-																					{/each}
-																				</div>
-																			{/if}
+																		<div class="product-info">
+																			<div>
+																				<h3 class="product-name">{item.name}</h3>
+																				{#if item.description}
+																					<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
+																				{/if}
+																			</div>
+																			<div class="product-price">
+																				{#if item.pricing.type === 'single'}
+																					€ {item.pricing.value.toFixed(2)}
+																				{:else}
+																					<div class="variants-compact">
+																						{#each item.pricing.variants as variant}
+																							<span class="variant-compact">
+																								{variant.name}: <strong>€ {variant.price.toFixed(2)}</strong>
+																							</span>
+																						{/each}
+																					</div>
+																				{/if}
+																			</div>
 																		</div>
 																	</div>
-																</div>
+																{:else}
+																	<div 
+																		class="product-card-compact" 
+																		class:unavailable={item.is_available === false}
+																	>
+																		{#if item.is_available === false}
+																			<div class="unavailable-badge">Non disponibile</div>
+																		{/if}
+																		<div class="product-info">
+																			<div>
+																				<h3 class="product-name">{item.name}</h3>
+																				{#if item.description}
+																					<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
+																				{/if}
+																			</div>
+																			<div class="product-price">
+																				{#if item.pricing.type === 'single'}
+																					€ {item.pricing.value.toFixed(2)}
+																				{:else}
+																					<div class="variants-compact">
+																						{#each item.pricing.variants as variant}
+																							<span class="variant-compact">
+																								{variant.name}: <strong>€ {variant.price.toFixed(2)}</strong>
+																							</span>
+																						{/each}
+																					</div>
+																				{/if}
+																			</div>
+																		</div>
+																	</div>
+																{/if}
 															{/each}
 														</div>
 													{:else}
@@ -426,44 +477,73 @@
 											{#if categoryItems.length > 0}
 												<div class="products-list">
 													{#each categoryItems as item (item.id)}
-														<div 
-															class="product-card-compact" 
-															class:unavailable={item.is_available === false}
-															class:has-image={item.image_url}
-															style={item.image_url ? `background-image: url('${item.image_url}')` : ''}
-															role="button" 
-															tabindex="0"
-															on:click={() => item.is_available !== false && item.image_url && openProductDetail(item)}
-															on:keydown={(e) => e.key === 'Enter' && item.is_available !== false && item.image_url && openProductDetail(item)}
-														>
-															{#if item.is_available === false}
-																<div class="unavailable-badge">Non disponibile</div>
-															{/if}
-															{#if item.image_url}
+														{#if item.image_url}
+															<div 
+																class="product-card-compact has-image clickable" 
+																class:unavailable={item.is_available === false}
+																style="background-image: url('{item.image_url}')"
+																role="button"
+																tabindex="0"
+																on:click={() => item.is_available !== false && openProductDetail(item)}
+																on:keydown={(e) => e.key === 'Enter' && item.is_available !== false && openProductDetail(item)}
+															>
+																{#if item.is_available === false}
+																	<div class="unavailable-badge">Non disponibile</div>
+																{/if}
 																<div class="product-overlay"></div>
-															{/if}
-															<div class="product-info">
-																<div>
-																	<h3 class="product-name">{item.name}</h3>
-																	{#if item.description}
-																		<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
-																	{/if}
-																</div>
-																<div class="product-price">
-																	{#if item.pricing.type === 'single'}
-																		€ {item.pricing.value.toFixed(2)}
-																	{:else}
-																		<div class="variants-compact">
-																			{#each item.pricing.variants as variant}
-																				<span class="variant-compact">
-																					{variant.name}: <strong>€ {variant.price.toFixed(2)}</strong>
-																				</span>
-																			{/each}
-																		</div>
-																	{/if}
+																<div class="product-info">
+																	<div>
+																		<h3 class="product-name">{item.name}</h3>
+																		{#if item.description}
+																			<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
+																		{/if}
+																	</div>
+																	<div class="product-price">
+																		{#if item.pricing.type === 'single'}
+																			€ {item.pricing.value.toFixed(2)}
+																		{:else}
+																			<div class="variants-compact">
+																				{#each item.pricing.variants as variant}
+																					<span class="variant-compact">
+																						{variant.name}: <strong>€ {variant.price.toFixed(2)}</strong>
+																					</span>
+																				{/each}
+																			</div>
+																		{/if}
+																	</div>
 																</div>
 															</div>
-														</div>
+														{:else}
+															<div 
+																class="product-card-compact" 
+																class:unavailable={item.is_available === false}
+															>
+																{#if item.is_available === false}
+																	<div class="unavailable-badge">Non disponibile</div>
+																{/if}
+																<div class="product-info">
+																	<div>
+																		<h3 class="product-name">{item.name}</h3>
+																		{#if item.description}
+																			<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
+																		{/if}
+																	</div>
+																	<div class="product-price">
+																		{#if item.pricing.type === 'single'}
+																			€ {item.pricing.value.toFixed(2)}
+																		{:else}
+																			<div class="variants-compact">
+																				{#each item.pricing.variants as variant}
+																					<span class="variant-compact">
+																						{variant.name}: <strong>€ {variant.price.toFixed(2)}</strong>
+																					</span>
+																				{/each}
+																			</div>
+																		{/if}
+																	</div>
+																</div>
+															</div>
+														{/if}
 													{/each}
 												</div>
 											{:else}
@@ -919,12 +999,18 @@
 		display: flex;
 		justify-content: space-between;
 		gap: 1.1rem;
-		cursor: pointer;
-		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		cursor: default;
 		box-shadow: 0 3px 10px rgba(21, 67, 21, 0.08), 0 1px 3px rgba(0,0,0,0.04);
 		min-height: 130px;
 		position: relative;
 		overflow: hidden;
+		user-select: text;
+	}
+
+	.product-card-compact.clickable {
+		cursor: pointer;
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		user-select: none;
 	}
 
 	/* Card con immagine di sfondo */
@@ -1254,12 +1340,18 @@
 		justify-content: space-between;
 		gap: 1rem;
 		box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-		cursor: pointer;
-		transition: transform 0.2s;
+		cursor: default;
 		min-height: 110px;
+		user-select: text;
 	}
 
-	.product-card:active {
+	.product-card.clickable {
+		cursor: pointer;
+		transition: transform 0.2s;
+		user-select: none;
+	}
+
+	.product-card.clickable:active {
 		transform: scale(0.98);
 	}
 
