@@ -332,7 +332,6 @@
 												{/if}
 												<div class="accordion-header-content">
 													<h3 class="accordion-title">{subcat.name}</h3>
-													<p class="accordion-subtitle">{subcatItems.length} prodotti</p>
 												</div>
 												<ChevronDown 
 													size={24} 
@@ -410,7 +409,6 @@
 									>
 										<div class="accordion-header-content">
 											<h3 class="accordion-title">{cat.name}</h3>
-											<p class="accordion-subtitle">{categoryItems.length} prodotti</p>
 										</div>
 										<ChevronDown 
 											size={24} 
