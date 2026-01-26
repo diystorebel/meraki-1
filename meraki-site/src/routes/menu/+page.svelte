@@ -844,8 +844,8 @@
 
 	/* Immagine sottocategoria a sinistra */
 	.accordion-image {
-		width : 50px;
-		height: 50px;
+		width : 60px;
+		height: 60px;
 		flex-shrink: 0;
 		border-radius: 8px;
 		overflow: hidden;
