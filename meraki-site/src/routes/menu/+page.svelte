@@ -823,7 +823,7 @@
 
 	.accordion-header {
 		width: 100%;
-		padding: 1rem;
+		padding: 0.75rem 1rem;
 		background: var(--white);
 		border: none;
 		display: flex;
@@ -844,8 +844,8 @@
 
 	/* Immagine sottocategoria a sinistra */
 	.accordion-image {
-		width: 50px;
-		height: 50px;
+		width: 45px;
+		height: 45px;
 		flex-shrink: 0;
 		border-radius: 8px;
 		overflow: hidden;
