@@ -708,7 +708,7 @@
 
 	.macro-tab-btn {
 		flex: 1;
-		padding: 1rem 0.5rem;
+		padding: 0.75rem 0.5rem;
 		background: transparent;
 		border: none;
 		cursor: pointer;
@@ -718,12 +718,12 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 0.3rem;
+		gap: 0.25rem;
 	}
 	
 	.macro-icon {
-		width: 100px;
-		height: 100px;
+		width: 70px;
+		height: 70px;
 		object-fit: contain;
 		opacity: 0.6;
 		transition: all 0.2s;
@@ -731,7 +731,7 @@
 	
 	.macro-tab-btn.active .macro-icon {
 		opacity: 1;
-		transform: scale(1.1);
+		transform: scale(1.05);
 	}
 	
 	.macro-tab-text {
