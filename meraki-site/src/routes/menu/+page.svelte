@@ -197,10 +197,10 @@
 
 <svelte:head>
 	<title>Menu | Meraki</title>
-	<!-- Google Font DM Serif Text -->
+	<!-- Google Fonts -->
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 	<!-- Preload immagine evento se presente -->
 	{#if eventoCorrente?.immagine_url}
 		<link rel="preload" as="image" href={eventoCorrente.immagine_url} />
@@ -1298,12 +1298,16 @@
 	}
 
 	.product-desc {
-		font-size: 0.95rem; /* Aumentato da 0.85rem */
-		color: #666;
+		font-family: 'Crimson Text', serif;
+		font-size: 1.25rem;
+		font-weight: 400;
+		font-style: italic;
+		color: #5a5a5a;
 		margin-bottom: 0.5rem;
-		line-height: 1.45;
+		line-height: 1.5;
 		max-height: none;
 		overflow: visible;
+		letter-spacing: 0.01em;
 	}
 
 	.empty-state {
@@ -1697,7 +1701,7 @@
 		}
 		
 		.product-desc {
-			font-size: 1rem;
+			font-size: 1.1rem;
 		}
 		
 		.product-price {

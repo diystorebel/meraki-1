@@ -119,7 +119,7 @@
 
 		<!-- Footer Minimal -->
 		<footer class="dash-footer">
-			<p>© 2025 Meraki Lainate</p>
+			<p>© 2026 Meraki Lainate</p>
 			<div class="footer-links">
 				<a href="/cookie-policy">Cookie</a>
 				<span>•</span>
