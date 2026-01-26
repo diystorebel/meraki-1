@@ -739,8 +739,8 @@
 	}
 	
 	.macro-tab-text {
-		font-family: 'Playfair Display', serif;
-		font-weight: 700;
+		font-family: 'DM Serif Text', serif;
+		font-weight: 400;
 		font-size: 0.85rem;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
