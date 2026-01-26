@@ -272,18 +272,27 @@
 
 	// Load available subcategory images from static folder
 	function loadAvailableSubcategoryImages() {
-		// Lista statica delle immagini disponibili
+		// Lista statica delle immagini disponibili (WebP per performance)
 		availableSubcategoryImages = [
-			{ name: 'After Dinner', path: '/immagini-sottocategorie/after dinner.png' },
-			{ name: 'Amari', path: '/immagini-sottocategorie/amari.png' },
-			{ name: 'Analcolici', path: '/immagini-sottocategorie/analcolici.png' },
-			{ name: 'Bibite', path: '/immagini-sottocategorie/bibite.png' },
-			{ name: 'Esotici', path: '/immagini-sottocategorie/esotici.png' },
-			{ name: 'Gin Tonic', path: '/immagini-sottocategorie/gin tonic.png' },
-			{ name: 'Pre Dinner', path: '/immagini-sottocategorie/pre dinner.png' },
-			{ name: 'Rum', path: '/immagini-sottocategorie/rum.png' },
-			{ name: 'Speciali', path: '/immagini-sottocategorie/speciali.png' },
-			{ name: 'Whisky', path: '/immagini-sottocategorie/whiksy.png' }
+			{ name: 'After Dinner', path: '/immagini-sottocategorie/after dinner.webp' },
+			{ name: 'Amari', path: '/immagini-sottocategorie/amari.webp' },
+			{ name: 'Analcolici', path: '/immagini-sottocategorie/analcolici.webp' },
+			{ name: 'Bibite', path: '/immagini-sottocategorie/bibite.webp' },
+			{ name: 'Birre Alla Spina', path: '/immagini-sottocategorie/birre alla spina.webp' },
+			{ name: 'Birre Bottiglia', path: '/immagini-sottocategorie/birre bottiglia.webp' },
+			{ name: 'Bollicine', path: '/immagini-sottocategorie/bollicine.webp' },
+			{ name: 'Dolci', path: '/immagini-sottocategorie/dolci.webp' },
+			{ name: 'Esotici', path: '/immagini-sottocategorie/esotici.webp' },
+			{ name: 'Gin Tonic', path: '/immagini-sottocategorie/gin tonic.webp' },
+			{ name: 'Hamburger', path: '/immagini-sottocategorie/hamburger.webp' },
+			{ name: 'Panini', path: '/immagini-sottocategorie/panini.webp' },
+			{ name: 'Peccati di Gola', path: '/immagini-sottocategorie/peccati di gola.webp' },
+			{ name: 'Pre Dinner', path: '/immagini-sottocategorie/pre dinner.webp' },
+			{ name: 'Rum', path: '/immagini-sottocategorie/rum.webp' },
+			{ name: 'Speciali', path: '/immagini-sottocategorie/speciali.webp' },
+			{ name: 'Vini Bianchi', path: '/immagini-sottocategorie/vini bianchi.webp' },
+			{ name: 'Vini Rossi', path: '/immagini-sottocategorie/vini rossi.webp' },
+			{ name: 'Whisky', path: '/immagini-sottocategorie/whiksy.webp' }
 		];
 	}
 

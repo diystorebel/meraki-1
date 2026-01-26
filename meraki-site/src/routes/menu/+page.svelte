@@ -323,9 +323,13 @@
 												class="accordion-header" 
 												class:open={isOpen}
 												class:has-image={subcat.image_url}
-												style={subcat.image_url ? `background-image: linear-gradient(to right, rgba(21, 67, 21, 0.95) 0%, rgba(21, 67, 21, 0.85) 60%, rgba(21, 67, 21, 0.7) 100%), url('${subcat.image_url}'); background-size: cover; background-position: center;` : ''}
 												on:click={() => toggleAccordion(accordionId)}
 											>
+												{#if subcat.image_url}
+													<div class="accordion-image">
+														<img src={subcat.image_url} alt={subcat.name} />
+													</div>
+												{/if}
 												<div class="accordion-header-content">
 													<h3 class="accordion-title">{subcat.name}</h3>
 													<p class="accordion-subtitle">{subcatItems.length} prodotti</p>
@@ -616,7 +620,7 @@
 	}
 
 	.app-container {
-		background: linear-gradient(to bottom, #f0f4f0 0%, #e8ede8 100%);
+		background: #e1ece0;
 		min-height: 100vh;
 		padding-bottom: 40px;
 	}
@@ -821,17 +825,15 @@
 
 	.accordion-header {
 		width: 100%;
-		padding: 1.1rem 1.3rem;
+		padding: 1rem;
 		background: var(--white);
 		border: none;
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
+		gap: 0.75rem;
 		cursor: pointer;
 		transition: all 0.3s ease;
-		gap: 1rem;
 		position: relative;
-		overflow: hidden;
 	}
 
 	.accordion-header:hover {
@@ -842,24 +844,19 @@
 		background: linear-gradient(135deg, var(--primary) 0%, #1a5a1a 100%);
 	}
 
-	/* Accordion con immagine di sfondo */
-	.accordion-header.has-image {
-		min-height: 60px;
-		padding: 1.5rem 1.3rem;
-		background-position: center !important;
-		background-size: contain !important;
-		background-repeat: no-repeat !important;
+	/* Immagine sottocategoria a sinistra */
+	.accordion-image {
+		width: 50px;
+		height: 50px;
+		flex-shrink: 0;
+		border-radius: 8px;
+		overflow: hidden;
 	}
 
-	.accordion-header.has-image .accordion-title,
-	.accordion-header.has-image .accordion-subtitle {
-		color: white;
-		text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-	}
-
-	.accordion-header.has-image :global(.accordion-chevron) {
-		color: white;
-		filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+	.accordion-image img {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
 	}
 
 	.accordion-header.open .accordion-title {
