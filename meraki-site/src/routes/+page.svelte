@@ -179,11 +179,83 @@
 	/* Dashboard - MOBILE FIRST */
 	.dashboard {
 		min-height: 100vh;
-		background: var(--grigio-chiaro);
+		background: #f5f5f5;
 		padding: 1.5rem 1rem 1rem;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
+		position: relative;
+		overflow: hidden;
+	}
+
+	/* Onde animate verdi - Layer base con pattern */
+	.dashboard::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: 
+			linear-gradient(120deg, 
+				transparent 0%, 
+				transparent 40%, 
+				rgba(46, 125, 50, 0.25) 50%, 
+				transparent 60%, 
+				transparent 100%
+			),
+			linear-gradient(240deg, 
+				transparent 0%, 
+				transparent 40%, 
+				rgba(34, 139, 34, 0.22) 50%, 
+				transparent 60%, 
+				transparent 100%
+			);
+		background-size: 300% 300%;
+		animation: waveMove1 12s ease-in-out infinite;
+		z-index: 0;
+		will-change: background-position;
+	}
+
+	/* Onde animate verdi - Layer secondario */
+	.dashboard::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: 
+			linear-gradient(60deg, 
+				transparent 0%, 
+				transparent 42%, 
+				rgba(21, 67, 21, 0.18) 50%, 
+				transparent 58%, 
+				transparent 100%
+			),
+			linear-gradient(300deg, 
+				transparent 0%, 
+				transparent 42%, 
+				rgba(46, 125, 50, 0.2) 50%, 
+				transparent 58%, 
+				transparent 100%
+			);
+		background-size: 280% 280%;
+		animation: waveMove2 16s ease-in-out infinite reverse;
+		z-index: 0;
+		will-change: background-position;
+	}
+
+	@keyframes waveMove1 {
+		0%, 100% {
+			background-position: 0% 50%;
+		}
+		50% {
+			background-position: 100% 50%;
+		}
+	}
+
+	@keyframes waveMove2 {
+		0%, 100% {
+			background-position: 100% 50%;
+		}
+		50% {
+			background-position: 0% 50%;
+		}
 	}
 
 	/* Logo */
@@ -194,6 +266,8 @@
 		margin-bottom: 2rem;
 		padding: 0 1rem;
 		animation: fadeInScale 0.8s ease-out 0.3s backwards;
+		position: relative;
+		z-index: 1;
 	}
 
 	@keyframes fadeInScale {
@@ -223,6 +297,8 @@
 		grid-template-columns: repeat(2, 1fr);
 		gap: 1rem;
 		flex: 1;
+		position: relative;
+		z-index: 1;
 	}
 
 	/* Tablet/Desktop: più spazio */
@@ -451,6 +527,8 @@
 		max-width: 1200px;
 		margin: 0 auto;
 		width: 100%;
+		position: relative;
+		z-index: 1;
 	}
 
 	.dash-footer p {
