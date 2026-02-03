@@ -61,11 +61,8 @@
 <!-- Dashboard -->
 {#if showDashboard}
 	<div class="dashboard" transition:fade={{ duration: 600 }}>
-		<!-- Logo con ritratto decorativo -->
+		<!-- Logo -->
 		<div class="logo-container">
-			<div class="portrait-bg">
-				<img src="/melo-portrait.webp" alt="Bartender portrait" class="portrait-image" />
-			</div>
 			<img src="/Logo-1.png" alt="Meraki Logo" class="dashboard-logo" />
 		</div>
 
@@ -215,56 +212,11 @@
 		}
 	}
 
-	/* Ritratto decorativo dietro al logo */
-	.portrait-bg {
-		position: absolute;
-		top: 50%;
-		left: 70%;
-		transform: translate(-50%, -50%);
-		width: auto;
-		height: 180%;
-		max-height: 450px;
-		z-index: 0;
-		opacity: 0.15;
-		pointer-events: none;
-		animation: portraitFloat 10s ease-in-out infinite, portraitGlow 5s ease-in-out infinite alternate;
-	}
-
-	.portrait-image {
-		width: auto;
-		height: 100%;
-		object-fit: contain;
-		/* Filtro calibrato per verde Meraki #154315 */
-		filter: brightness(0) saturate(100%) invert(16%) sepia(25%) saturate(2080%) hue-rotate(88deg) brightness(96%) contrast(95%) drop-shadow(0 0 40px rgba(21, 67, 21, 0.5));
-	}
-
-	/* Animazione fluttuazione leggera */
-	@keyframes portraitFloat {
-		0%, 100% {
-			transform: translate(-50%, -50%) translateY(0) rotate(0deg);
-		}
-		50% {
-			transform: translate(-50%, -50%) translateY(-8px) rotate(0.5deg);
-		}
-	}
-
-	/* Animazione glow pulsante */
-	@keyframes portraitGlow {
-		0% {
-			filter: drop-shadow(0 0 30px rgba(21, 67, 21, 0.4));
-		}
-		100% {
-			filter: drop-shadow(0 0 60px rgba(21, 67, 21, 0.8));
-		}
-	}
-
 	.dashboard-logo {
 		width: 100%;
 		max-width: 350px;
 		height: auto;
 		filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
-		position: relative;
-		z-index: 2;
 	}
 
 	/* Grid - SEMPRE 2 COLONNE (anche mobile!) */
@@ -298,21 +250,6 @@
 
 		.dashboard-logo {
 			max-width: 400px;
-		}
-
-		.portrait-bg {
-			height: 140%;
-			max-height: 600px;
-			opacity: 0.18;
-		}
-
-		@keyframes portraitFloat {
-			0%, 100% {
-				transform: translate(-50%, -50%) translateY(0) rotate(0deg);
-			}
-			50% {
-				transform: translate(-50%, -50%) translateY(-10px) rotate(0.5deg);
-			}
 		}
 	}
 
