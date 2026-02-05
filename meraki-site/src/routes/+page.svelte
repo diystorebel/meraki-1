@@ -1,7 +1,12 @@
 <script>
 	import { onMount } from 'svelte';
 	import { fade, scale } from 'svelte/transition';
-	import { Menu, Users, Clock, MapPin, Image, Calendar } from 'lucide-svelte';
+	// Import solo le icone usate per ridurre bundle size
+	import Menu from 'lucide-svelte/icons/menu';
+	import Users from 'lucide-svelte/icons/users';
+	import Clock from 'lucide-svelte/icons/clock';
+	import Image from 'lucide-svelte/icons/image';
+	import Calendar from 'lucide-svelte/icons/calendar';
 	import { loadEventiVisibili, getStatoEvento } from '$lib/stores/eventiStore';
 
 	let showSplash = false;
@@ -10,15 +15,6 @@
 	let eventiBadgeText = null;
 
 	onMount(async () => {
-		// Controlla se ci sono eventi visibili (in corso o in arrivo)
-		eventiVisibili = await loadEventiVisibili();
-		
-		// Determina il testo del badge (priorità: IN CORSO > IN ARRIVO)
-		if (eventiVisibili.length > 0) {
-			const hasInCorso = eventiVisibili.some(e => getStatoEvento(e) === 'in_corso');
-			eventiBadgeText = hasInCorso ? 'IN CORSO' : 'IN ARRIVO';
-		}
-
 		// Splash screen solo al primo ingresso nella sessione
 		const hasSeenSplash = sessionStorage.getItem('hasSeenSplash');
 		
@@ -37,15 +33,26 @@
 			// Mostra direttamente la dashboard
 			showDashboard = true;
 		}
+
+		// Carica eventi in background (non blocca il rendering)
+		loadEventiVisibili().then(eventi => {
+			eventiVisibili = eventi;
+			// Determina il testo del badge (priorità: IN CORSO > IN ARRIVO)
+			if (eventiVisibili.length > 0) {
+				const hasInCorso = eventiVisibili.some(e => getStatoEvento(e) === 'in_corso');
+				eventiBadgeText = hasInCorso ? 'IN CORSO' : 'IN ARRIVO';
+			}
+		}).catch(err => console.error('Errore caricamento eventi:', err));
 	});
 </script>
 
 <svelte:head>
 	<title>Meraki - L'essenza di noi stessi</title>
-	<!-- Google Font DM Serif Text -->
+	<!-- Google Font DM Serif Text - ottimizzato per performance -->
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+	<noscript><link href="https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&display=swap" rel="stylesheet"></noscript>
 </svelte:head>
 
 <!-- Splash Screen -->
