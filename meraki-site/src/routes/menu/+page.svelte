@@ -6,6 +6,7 @@
 	import { smartSearch } from '$lib/utils/smartSearch.js';
 	import { fade, slide } from 'svelte/transition';
 	import { X, Search, Home, ChevronDown, ArrowLeft, Calendar, Phone } from 'lucide-svelte';
+	import AllergenIcons from '$lib/components/AllergenIcons.svelte';
 
 	// Macro-categorie configurabili - ora usano il campo macro_category dal DB
 	const MACRO_CATEGORIES = [
@@ -310,6 +311,7 @@
 									{#if item.description}
 										<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
 									{/if}
+									<AllergenIcons allergens={item.allergens} size={14} />
 									<div class="product-price">
 										{#if item.pricing.type === 'single'}
 											€ {item.pricing.value.toFixed(2)}
@@ -335,6 +337,7 @@
 									{#if item.description}
 										<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
 									{/if}
+									<AllergenIcons allergens={item.allergens} size={14} />
 									<div class="product-price">
 										{#if item.pricing.type === 'single'}
 											€ {item.pricing.value.toFixed(2)}
@@ -428,6 +431,7 @@
 																				{#if item.description}
 																					<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
 																				{/if}
+																				<AllergenIcons allergens={item.allergens} size={14} />
 																			</div>
 																			<div class="product-price">
 																				{#if item.pricing.type === 'single'}
@@ -458,6 +462,7 @@
 																				{#if item.description}
 																					<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
 																				{/if}
+																				<AllergenIcons allergens={item.allergens} size={14} />
 																			</div>
 																			<div class="product-price">
 																				{#if item.pricing.type === 'single'}
@@ -534,6 +539,7 @@
 																		{#if item.description}
 																			<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
 																		{/if}
+																		<AllergenIcons allergens={item.allergens} size={14} />
 																	</div>
 																	<div class="product-price">
 																		{#if item.pricing.type === 'single'}
@@ -564,6 +570,7 @@
 																		{#if item.description}
 																			<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
 																		{/if}
+																		<AllergenIcons allergens={item.allergens} size={14} />
 																	</div>
 																	<div class="product-price">
 																		{#if item.pricing.type === 'single'}
@@ -722,6 +729,11 @@
 			</div>
 		</div>
 	{/if}
+	
+	<!-- Footer Menu -->
+	<footer class="menu-footer">
+		<p>Per informazioni sugli allergeni, consulta la nostra <a href="/allergeni">lista allergeni</a> o chiedi al nostro staff.</p>
+	</footer>
 </div>
 
 <style>
@@ -741,7 +753,35 @@
 	.app-container {
 		background: #e1ece0;
 		min-height: 100vh;
-		padding-bottom: 40px;
+		padding-bottom: 0;
+	}
+	
+	/* Footer Menu */
+	.menu-footer {
+		background: var(--white);
+		padding: 1.5rem 1rem;
+		text-align: center;
+		margin-top: 2rem;
+		border-top: 1px solid rgba(0, 0, 0, 0.1);
+	}
+	
+	.menu-footer p {
+		margin: 0;
+		font-size: 0.9rem;
+		color: var(--text-light);
+		line-height: 1.6;
+	}
+	
+	.menu-footer a {
+		color: var(--primary);
+		text-decoration: none;
+		font-weight: 600;
+		transition: opacity 0.3s ease;
+	}
+	
+	.menu-footer a:hover {
+		opacity: 0.7;
+		text-decoration: underline;
 	}
 
 	/* Top Bar */

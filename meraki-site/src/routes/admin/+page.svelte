@@ -5,7 +5,7 @@
 	import { eventiStore, loadEventi, addEvento, updateEvento, deleteEvento, getStatoEvento, getBadgeText, eventiLoading } from '$lib/stores/eventiStore.js';
 	import { galleryStore, loadGallery, addGalleryImage, deleteGalleryImage as deleteGalleryImageFromDb, updateGalleryOrder, updateGalleryAltText, galleryLoading, themesStore, loadThemes, addTheme, updateTheme, deleteTheme, updateImageTheme, galleryByTheme } from '$lib/stores/galleryStore.js';
 	import { uploadMenuImage, deleteMenuImage, uploadGalleryImage, deleteGalleryImage } from '$lib/utils/imageUpload.js';
-	import { Lock, Package, Tag, Eye, Camera, Plus, Search, X, Edit, Trash2, Check, FileText, DollarSign, ArrowLeft, MousePointerClick, Home, Calendar, Clock, Image as ImageIcon, GripVertical, Palette, FolderOpen, AlertTriangle, Lightbulb, ChevronUp, ChevronDown } from 'lucide-svelte';
+	import { Lock, Package, Tag, Eye, Camera, Plus, Search, X, Edit, Trash2, Check, FileText, DollarSign, ArrowLeft, MousePointerClick, Home, Calendar, Clock, Image as ImageIcon, GripVertical, Palette, FolderOpen, AlertTriangle, Lightbulb, ChevronUp, ChevronDown, Wheat, Milk, Egg, Fish, Nut, Leaf, Sprout, Grape, Shell } from 'lucide-svelte';
 
 	let email = '';
 	let password = '';
@@ -103,7 +103,8 @@
 		detailed_description: '',
 		pricing: { type: 'single', value: 0 },
 		note: '',
-		image_url: ''
+		image_url: '',
+		allergens: []
 	};
 
 	function getSubcategoriesForCategoryId(categoryId) {
@@ -125,13 +126,67 @@
 	}
 
 	// Normalizza stringa in Title Case (prima lettera di ogni parola maiuscola)
+	// Mantiene minuscole le preposizioni comuni
 	function toTitleCase(str) {
 		if (!str) return str;
+		const preposizioni = ['di', 'a', 'da', 'in', 'con', 'su', 'per', 'tra', 'fra', 'e', 'ed'];
 		return str
 			.toLowerCase()
 			.split(' ')
-			.map(word => word.charAt(0).toUpperCase() + word.slice(1))
+			.map((word, index) => {
+				// Prima parola sempre maiuscola, preposizioni minuscole
+				if (index === 0 || !preposizioni.includes(word)) {
+					return word.charAt(0).toUpperCase() + word.slice(1);
+				}
+				return word;
+			})
 			.join(' ');
+	}
+	
+	// Normalizza sottocategoria usando valori canonici dalla categoria
+	// Previene duplicati causati da variazioni di case/spazi
+	function normalizeSubcategory(categoryId, subcategoryInput) {
+		if (!subcategoryInput || !categoryId) return '';
+		
+		const category = $categoriesStore.find(c => c.id === categoryId);
+		if (!category || !category.subcategories) {
+			return toTitleCase(subcategoryInput.trim());
+		}
+		
+		// Cerca match case-insensitive con sottocategorie esistenti
+		const inputLower = subcategoryInput.toLowerCase().trim();
+		const existingSubcat = category.subcategories.find(
+			sub => sub.name.toLowerCase() === inputLower
+		);
+		
+		// Se esiste, usa il valore canonico, altrimenti normalizza con toTitleCase
+		return existingSubcat ? existingSubcat.name : toTitleCase(subcategoryInput.trim());
+	}
+	
+	// Lista allergeni disponibili (14 allergeni obbligatori EU) con icone
+	const AVAILABLE_ALLERGENS = [
+		{ id: 'glutine', label: 'Glutine', icon: Wheat },
+		{ id: 'latticini', label: 'Latticini', icon: Milk },
+		{ id: 'uova', label: 'Uova', icon: Egg },
+		{ id: 'pesce', label: 'Pesce', icon: Fish },
+		{ id: 'arachidi', label: 'Arachidi', icon: Nut },
+		{ id: 'frutta_guscio', label: 'Frutta a guscio', icon: Nut },
+		{ id: 'soia', label: 'Soia', icon: Leaf },
+		{ id: 'sedano', label: 'Sedano', icon: Sprout },
+		{ id: 'senape', label: 'Senape', icon: Sprout },
+		{ id: 'sesamo', label: 'Sesamo', icon: Sprout },
+		{ id: 'solfiti', label: 'Solfiti', icon: Grape },
+		{ id: 'crostacei', label: 'Crostacei', icon: Shell },
+		{ id: 'molluschi', label: 'Molluschi', icon: Shell },
+		{ id: 'lupini', label: 'Lupini', icon: Leaf }
+	];
+	
+	function toggleAllergen(allergenId) {
+		if (formData.allergens.includes(allergenId)) {
+			formData.allergens = formData.allergens.filter(a => a !== allergenId);
+		} else {
+			formData.allergens = [...formData.allergens, allergenId];
+		}
 	}
 
 	$: filteredMenu = $menuStore.filter(item => {
@@ -172,7 +227,8 @@
 			detailed_description: '',
 			pricing: { type: 'single', value: 0 },
 			note: '',
-			image_url: ''
+			image_url: '',
+			allergens: []
 		};
 		showModal = true;
 	}
@@ -333,7 +389,8 @@
 			detailed_description: item.detailed_description || '',
 			pricing: item.pricing,
 			note: item.note || '',
-			image_url: item.image_url || ''
+			image_url: item.image_url || '',
+			allergens: item.allergens || []
 		};
 		showModal = true;
 	}
@@ -347,8 +404,8 @@
 	async function handleSave() {
 		const data = {
 			...formData,
-			// Normalizza sottocategoria in Title Case per evitare duplicati
-			subcategory: toTitleCase(formData.subcategory)
+			// Normalizza sottocategoria usando valori canonici dalla categoria
+			subcategory: normalizeSubcategory(formData.category_id, formData.subcategory)
 		};
 
 		if (editingItem) {
@@ -1502,6 +1559,53 @@
 								<label>Note</label>
 								<input type="text" bind:value={formData.note} placeholder="es: Opzione senza glutine +2€" class="input-modern" />
 							</div>
+						</div>
+						
+						<!-- Sezione Allergeni -->
+						<div class="form-section">
+							<h3 class="section-title">
+								<AlertTriangle size={24} />
+								Allergeni
+							</h3>
+							<p class="section-description">Seleziona gli allergeni presenti nel prodotto</p>
+							
+							<div class="allergens-grid">
+								{#each AVAILABLE_ALLERGENS as allergen}
+									<button 
+										type="button"
+										class="allergen-chip"
+										class:selected={formData.allergens.includes(allergen.id)}
+										on:click={() => toggleAllergen(allergen.id)}
+									>
+										<span class="allergen-icon-wrapper">
+											<svelte:component this={allergen.icon} size={18} />
+										</span>
+										<span class="allergen-label">{allergen.label}</span>
+										{#if formData.allergens.includes(allergen.id)}
+											<span class="allergen-check">
+												<Check size={14} />
+											</span>
+										{/if}
+									</button>
+								{/each}
+							</div>
+							
+							{#if formData.allergens.length > 0}
+								<div class="selected-allergens-summary">
+									<span class="summary-label">Selezionati:</span>
+									<div class="summary-chips">
+										{#each formData.allergens as allergenId}
+											{@const allergen = AVAILABLE_ALLERGENS.find(a => a.id === allergenId)}
+											{#if allergen}
+												<span class="summary-chip">
+													<svelte:component this={allergen.icon} size={14} />
+													{allergen.label}
+												</span>
+											{/if}
+										{/each}
+									</div>
+								</div>
+							{/if}
 						</div>
 					</div>
 
@@ -3524,6 +3628,113 @@
 			opacity: 1;
 			transform: scale(1);
 		}
+	}
+	
+	/* Allergens Grid - Improved UI */
+	.allergens-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+		gap: 0.6rem;
+		margin-top: 1rem;
+	}
+	
+	.allergen-chip {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.6rem 0.8rem;
+		background: var(--grigio-chiaro);
+		border: 2px solid var(--grigio);
+		border-radius: 10px;
+		cursor: pointer;
+		transition: all 0.2s ease;
+		font-size: 0.85rem;
+		font-weight: 500;
+		color: var(--grigio-scuro);
+		position: relative;
+	}
+	
+	.allergen-chip:hover {
+		background: var(--bianco);
+		border-color: var(--verde-meraki);
+		color: var(--verde-meraki);
+	}
+	
+	.allergen-chip.selected {
+		background: rgba(21, 67, 21, 0.1);
+		border-color: var(--verde-meraki);
+		color: var(--verde-meraki);
+	}
+	
+	.allergen-icon-wrapper {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+	
+	.allergen-label {
+		flex: 1;
+		text-align: left;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	
+	.allergen-check {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 18px;
+		height: 18px;
+		background: var(--verde-meraki);
+		border-radius: 50%;
+		color: white;
+		flex-shrink: 0;
+	}
+	
+	/* Summary dei selezionati */
+	.selected-allergens-summary {
+		margin-top: 1rem;
+		padding: 1rem;
+		background: rgba(21, 67, 21, 0.05);
+		border-radius: 10px;
+		border: 1px solid rgba(21, 67, 21, 0.1);
+	}
+	
+	.summary-label {
+		font-size: 0.8rem;
+		font-weight: 600;
+		color: var(--verde-meraki);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		display: block;
+		margin-bottom: 0.5rem;
+	}
+	
+	.summary-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+	}
+	
+	.summary-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		padding: 0.3rem 0.6rem;
+		background: var(--verde-meraki);
+		color: white;
+		border-radius: 6px;
+		font-size: 0.75rem;
+		font-weight: 500;
+	}
+	
+	.section-description {
+		font-size: 0.9rem;
+		color: var(--grigio-scuro);
+		margin: 0.5rem 0 0 0;
+		line-height: 1.5;
 	}
 
 	@media (max-width: 768px) {
