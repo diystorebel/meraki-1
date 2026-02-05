@@ -1,0 +1,10 @@
+# Robots.txt for merakilainate.it
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://merakilainate.it/sitemap.xml
+
+# Disallow admin area
+Disallow: /admin
+Disallow: /api/
