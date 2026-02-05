@@ -41,6 +41,7 @@
 	let eventiVisibili = [];
 	let showEventoPopup = false;
 	let eventoCorrente = null;
+	let aperitivoDropdownOpen = false;
 	
 	// Debounce search per evitare scatti durante digitazione
 	$: {
@@ -224,7 +225,7 @@
 	}
 
 	$: if (typeof document !== 'undefined') {
-		document.body.style.overflow = selectedProduct || showEventoPopup ? 'hidden' : '';
+		document.body.style.overflow = selectedProduct || showEventoPopup || aperitivoDropdownOpen ? 'hidden' : '';
 	}
 </script>
 
@@ -284,11 +285,6 @@
 				<span class="macro-tab-text">{macro.name}</span>
 			</button>
 		{/each}
-	</div>
-
-	<!-- Banner Aperitivo - Compatto sotto tabs -->
-	<div class="aperitivo-banner">
-		<span><strong>Aperitivo fino alle 21:00!</strong> Aggiungi +€3 al drink (€5 no glutine/lattosio) e gusta gli stuzzichini dello chef!</span>
 	</div>
 
 	<!-- Main Content -->
@@ -738,6 +734,61 @@
 	<footer class="menu-footer">
 		<p>Per informazioni sugli allergeni, consulta la nostra <a href="/allergeni">lista allergeni</a> o chiedi al nostro staff.</p>
 	</footer>
+	
+	<!-- Floating Aperitivo Badge -->
+	<button 
+		class="aperitivo-float-badge" 
+		on:click={() => aperitivoDropdownOpen = true}
+		aria-label="Info aperitivo"
+	>
+		<span class="badge-icon">🍸</span>
+		<span class="badge-text">Aperitivo?</span>
+	</button>
+	
+	<!-- Aperitivo Popup -->
+	{#if aperitivoDropdownOpen}
+		<div 
+			class="aperitivo-overlay" 
+			transition:fade={{ duration: 200 }}
+			on:click={() => aperitivoDropdownOpen = false}
+			on:keydown={(e) => e.key === 'Escape' && (aperitivoDropdownOpen = false)}
+			role="button"
+			tabindex="0"
+		>
+			<div 
+				class="aperitivo-popup" 
+				on:click|stopPropagation
+				on:keydown|stopPropagation
+				transition:slide={{ duration: 300 }}
+			>
+				<button class="aperitivo-close" on:click={() => aperitivoDropdownOpen = false}>
+					<X size={24} />
+				</button>
+				
+				<div class="aperitivo-content">
+					<h3>🍸 Aperitivo fino alle 21:00</h3>
+					<p class="aperitivo-desc">
+						Scegli il cocktail che preferisci dal nostro menu e aggiungi una selezione di stuzzichini preparati al momento dal nostro chef!
+					</p>
+					
+					<div class="aperitivo-pricing">
+						<div class="price-item">
+							<span class="price-label">Aperitivo classico</span>
+							<span class="price-value">+ €3,00</span>
+						</div>
+						<div class="price-item">
+							<span class="price-label">Senza glutine o lattosio</span>
+							<span class="price-value">+ €5,00</span>
+						</div>
+					</div>
+					
+					<p class="aperitivo-note">
+						<strong>Come funziona:</strong> Ordina il tuo cocktail preferito e comunica al nostro staff che vuoi l'aperitivo. Riceverai una selezione di stuzzichini freschi preparati al momento!
+					</p>
+				</div>
+			</div>
+		</div>
+	{/if}
 </div>
 
 <style>
@@ -788,18 +839,178 @@
 		text-decoration: underline;
 	}
 
-	/* Banner Aperitivo - Compatto */
-	.aperitivo-banner {
-		background: var(--primary);
+	/* Floating Aperitivo Badge */
+	.aperitivo-float-badge {
+		position: fixed;
+		bottom: 2rem;
+		right: 1rem;
+		background: linear-gradient(135deg, var(--primary) 0%, #1a5a1a 100%);
 		color: white;
-		padding: 0.65rem 1rem;
-		text-align: center;
-		font-size: 0.9rem;
-		line-height: 1.5;
+		border: none;
+		border-radius: 50px;
+		padding: 1rem 1.5rem;
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		font-size: 1.1rem;
+		font-weight: 700;
+		cursor: pointer;
+		box-shadow: 0 8px 25px rgba(21, 67, 21, 0.5);
+		z-index: 90;
+		transition: all 0.3s ease;
+		animation: pulse 2s ease-in-out infinite;
 	}
 
-	.aperitivo-banner strong {
+	.aperitivo-float-badge:hover {
+		transform: translateY(-3px);
+		box-shadow: 0 10px 30px rgba(21, 67, 21, 0.5);
+	}
+
+	.aperitivo-float-badge:active {
+		transform: translateY(-1px);
+	}
+
+	.badge-icon {
+		font-size: 1.5rem;
+		line-height: 1;
+	}
+
+	.badge-text {
+		letter-spacing: 0.02em;
+	}
+
+	@keyframes pulse {
+		0%, 100% {
+			box-shadow: 0 6px 20px rgba(21, 67, 21, 0.4);
+		}
+		50% {
+			box-shadow: 0 6px 25px rgba(21, 67, 21, 0.6);
+		}
+	}
+
+	/* Aperitivo Popup */
+	.aperitivo-overlay {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.6);
+		backdrop-filter: blur(5px);
+		z-index: 100;
+		display: flex;
+		align-items: flex-end;
+		justify-content: center;
+	}
+
+	.aperitivo-popup {
+		background: var(--white);
+		width: 100%;
+		max-width: 500px;
+		border-radius: 24px 24px 0 0;
+		position: relative;
+		max-height: 80vh;
+		overflow-y: auto;
+	}
+
+	@media (min-width: 640px) {
+		.aperitivo-overlay {
+			align-items: center;
+		}
+		
+		.aperitivo-popup {
+			border-radius: 24px;
+			margin: 1rem;
+		}
+	}
+
+	.aperitivo-close {
+		position: absolute;
+		top: 1rem;
+		right: 1rem;
+		width: 40px;
+		height: 40px;
+		background: #f0f0f0;
+		border: none;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		color: var(--text);
+		transition: all 0.2s;
+		z-index: 10;
+	}
+
+	.aperitivo-close:hover {
+		background: #e0e0e0;
+		transform: scale(1.1);
+	}
+
+	.aperitivo-content {
+		padding: 2rem 1.5rem;
+	}
+
+	.aperitivo-content h3 {
+		font-family: 'DM Serif Text', serif;
+		font-size: 1.8rem;
+		color: var(--primary);
+		margin: 0 0 1rem 0;
+		text-align: center;
+		padding-right: 2.5rem;
+	}
+
+	.aperitivo-desc {
+		font-size: 1rem;
+		color: #555;
+		line-height: 1.6;
+		margin: 0 0 1.5rem 0;
+		text-align: center;
+	}
+
+	.aperitivo-pricing {
+		background: linear-gradient(135deg, #f0f4f0 0%, #e8ede8 100%);
+		border-radius: 16px;
+		padding: 1.25rem;
+		margin-bottom: 1.5rem;
+		border: 2px solid rgba(21, 67, 21, 0.1);
+	}
+
+	.price-item {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.75rem 0;
+	}
+
+	.price-item:not(:last-child) {
+		border-bottom: 1px dashed rgba(21, 67, 21, 0.2);
+	}
+
+	.price-label {
+		font-size: 0.95rem;
+		color: var(--text);
+		font-weight: 500;
+	}
+
+	.price-value {
+		font-size: 1.1rem;
 		font-weight: 700;
+		color: var(--primary);
+	}
+
+	.aperitivo-note {
+		font-size: 0.9rem;
+		color: #666;
+		line-height: 1.6;
+		background: #fafafa;
+		padding: 1rem;
+		border-radius: 12px;
+		border-left: 4px solid var(--primary);
+		margin: 0;
+	}
+
+	.aperitivo-note strong {
+		color: var(--primary);
+		display: block;
+		margin-bottom: 0.5rem;
 	}
 
 	/* Top Bar */
