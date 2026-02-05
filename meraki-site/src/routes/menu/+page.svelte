@@ -5,7 +5,7 @@
 	import { eventiStore, loadEventiVisibili, getStatoEvento, getBadgeText } from '$lib/stores/eventiStore.js';
 	import { smartSearch } from '$lib/utils/smartSearch.js';
 	import { fade, slide } from 'svelte/transition';
-	import { X, Search, Home, ChevronDown, ArrowLeft, Calendar, Phone } from 'lucide-svelte';
+	import { X, Search, Home, ChevronDown, ArrowLeft, Calendar, Phone, Wine } from 'lucide-svelte';
 	import AllergenIcons from '$lib/components/AllergenIcons.svelte';
 
 	// Macro-categorie configurabili - ora usano il campo macro_category dal DB
@@ -286,6 +286,19 @@
 			</button>
 		{/each}
 	</div>
+
+	<!-- Banner Aperitivo - Fisso sotto tabs -->
+	<button 
+		class="aperitivo-banner-btn" 
+		on:click={() => aperitivoDropdownOpen = true}
+	>
+		<div class="banner-content-wrapper">
+			<div class="banner-text-wrapper">
+				<span class="banner-title">Vuoi fare aperitivo?</span>
+				<span class="banner-subtitle">Scopri la nostra formula</span>
+			</div>
+		</div>
+	</button>
 
 	<!-- Main Content -->
 	<main class="content-area">
@@ -735,16 +748,6 @@
 		<p>Per informazioni sugli allergeni, consulta la nostra <a href="/allergeni">lista allergeni</a> o chiedi al nostro staff.</p>
 	</footer>
 	
-	<!-- Floating Aperitivo Badge -->
-	<button 
-		class="aperitivo-float-badge" 
-		on:click={() => aperitivoDropdownOpen = true}
-		aria-label="Info aperitivo"
-	>
-		<span class="badge-icon">🍸</span>
-		<span class="badge-text">Aperitivo?</span>
-	</button>
-	
 	<!-- Aperitivo Popup -->
 	{#if aperitivoDropdownOpen}
 		<div 
@@ -839,53 +842,116 @@
 		text-decoration: underline;
 	}
 
-	/* Floating Aperitivo Badge */
-	.aperitivo-float-badge {
-		position: fixed;
-		bottom: 2rem;
-		right: 1rem;
+	/* Banner Aperitivo - Fisso sotto tabs */
+	.aperitivo-banner-btn {
+		width: 100%;
 		background: linear-gradient(135deg, var(--primary) 0%, #1a5a1a 100%);
-		color: white;
 		border: none;
-		border-radius: 50px;
-		padding: 1rem 1.5rem;
+		padding: 0.9rem 1.25rem;
 		display: flex;
 		align-items: center;
-		gap: 0.6rem;
-		font-size: 1.1rem;
-		font-weight: 700;
+		justify-content: center;
 		cursor: pointer;
-		box-shadow: 0 8px 25px rgba(21, 67, 21, 0.5);
-		z-index: 90;
 		transition: all 0.3s ease;
-		animation: pulse 2s ease-in-out infinite;
+		position: relative;
+		overflow: hidden;
+		box-shadow: 0 4px 15px rgba(21, 67, 21, 0.25);
 	}
 
-	.aperitivo-float-badge:hover {
-		transform: translateY(-3px);
-		box-shadow: 0 10px 30px rgba(21, 67, 21, 0.5);
+	.aperitivo-banner-btn::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+		transform: translateX(-100%);
+		animation: shimmer 3s infinite;
 	}
 
-	.aperitivo-float-badge:active {
+	@keyframes shimmer {
+		0% { transform: translateX(-100%); }
+		50%, 100% { transform: translateX(100%); }
+	}
+
+	.aperitivo-banner-btn:hover {
+		background: linear-gradient(135deg, #1a5a1a 0%, #0d3a0d 100%);
+		box-shadow: 0 6px 20px rgba(21, 67, 21, 0.35);
 		transform: translateY(-1px);
 	}
 
-	.badge-icon {
-		font-size: 1.5rem;
-		line-height: 1;
+	.aperitivo-banner-btn:active {
+		transform: scale(0.99) translateY(0);
 	}
 
-	.badge-text {
-		letter-spacing: 0.02em;
+	.banner-content-wrapper {
+		display: flex;
+		align-items: center;
+		gap: 0.85rem;
+		position: relative;
+		z-index: 1;
+		width: 100%;
+		max-width: 400px;
 	}
 
-	@keyframes pulse {
-		0%, 100% {
-			box-shadow: 0 6px 20px rgba(21, 67, 21, 0.4);
-		}
-		50% {
-			box-shadow: 0 6px 25px rgba(21, 67, 21, 0.6);
-		}
+	.banner-icon-left {
+		color: rgba(255, 255, 255, 0.9);
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 40px;
+		height: 40px;
+		background: rgba(255, 255, 255, 0.15);
+		border-radius: 50%;
+	}
+
+	.banner-cta {
+		color: rgba(255, 255, 255, 0.9);
+		flex-shrink: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		margin-left: auto;
+		gap: 0.1rem;
+	}
+
+	.cta-text {
+		font-size: 0.6rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		font-weight: 600;
+		opacity: 0.85;
+	}
+
+	.banner-cta :global(svg) {
+		animation: nudge 2s ease-in-out infinite;
+	}
+
+	@keyframes nudge {
+		0%, 100% { transform: translateY(0); }
+		50% { transform: translateY(3px); }
+	}
+
+	.banner-text-wrapper {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.1rem;
+		text-align: left;
+		flex: 1;
+	}
+
+	.banner-title {
+		font-size: 1.05rem;
+		font-weight: 700;
+		color: #ffffff;
+		letter-spacing: 0.01em;
+	}
+
+	.banner-subtitle {
+		font-size: 0.8rem;
+		color: rgba(255, 255, 255, 0.85);
+		font-weight: 500;
 	}
 
 	/* Aperitivo Popup */
