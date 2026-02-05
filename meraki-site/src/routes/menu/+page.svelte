@@ -956,7 +956,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1.5rem;
-		padding-top: 0.1rem;
 	}
 
 	/* Category Section (per categorie con sottocategorie) */
@@ -1397,7 +1396,7 @@
 
 	/* Content */
 	.content-area {
-		padding: 1rem;
+		padding: 0.2rem 1rem 1rem;
 		background: transparent;
 	}
 
