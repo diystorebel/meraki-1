@@ -42,8 +42,6 @@
 
 <svelte:head>
 	<title>Meraki - L'essenza di noi stessi</title>
-	<!-- Preload risorse critiche per migliorare FCP/LCP -->
-	<link rel="preload" href="/Logo-1.png" as="image" />
 	<!-- Google Font DM Serif Text -->
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -65,7 +63,7 @@
 	<div class="dashboard" transition:fade={{ duration: 600 }}>
 		<!-- Logo -->
 		<div class="logo-container">
-			<img src="/Logo-1.png" alt="Meraki Logo" class="dashboard-logo" width="1200" height="413" fetchpriority="high" />
+			<img src="/Logo-1.png" alt="Meraki Logo" class="dashboard-logo" width="1200" height="413" />
 		</div>
 
 		<!-- Dashboard Grid -->

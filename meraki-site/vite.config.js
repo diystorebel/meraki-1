@@ -4,27 +4,14 @@ import { defineConfig } from 'vite';
 export default defineConfig({
 	plugins: [sveltekit()],
 	build: {
+		// Ottimizzazioni conservative
+		target: 'es2020',
+		cssCodeSplit: true,
 		rollupOptions: {
 			output: {
-				manualChunks: (id) => {
-					// Separa vendor libraries per miglior code splitting
-					if (id.includes('node_modules')) {
-						if (id.includes('@supabase')) {
-							return 'vendor-supabase';
-						}
-						if (id.includes('lucide-svelte')) {
-							return 'vendor-icons';
-						}
-						if (id.includes('browser-image-compression')) {
-							return 'vendor-image';
-						}
-						// Altri vendor in un chunk separato
-						return 'vendor';
-					}
-				}
+				// Lascia che SvelteKit gestisca automaticamente il chunking
+				experimentalMinChunkSize: 10000
 			}
-		},
-		// Riduce dimensione bundle
-		chunkSizeWarningLimit: 1000
+		}
 	}
 });
