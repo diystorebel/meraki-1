@@ -4,9 +4,62 @@
 	import { initAuth } from '$lib/stores/authStore';
 	import { loadCategories } from '$lib/stores/categoriesStore';
 	import { loadMenu } from '$lib/stores/menuStore';
+	import CookieBanner from '$lib/components/CookieBanner.svelte';
 	import '../app.css';
 
 	let contentReady = false;
+
+	// SEO Configuration
+	const siteUrl = 'https://merakilainate.it';
+	const siteName = 'Meraki Lainate';
+	const siteDescription = 'Cocktail bar a Lainate. Scopri i nostri cocktails artigianali, drinks e food in un\'atmosfera unica. L\'essenza di noi stessi.';
+	const siteImage = `${siteUrl}/og-image.jpg`;
+
+	// JSON-LD Structured Data for LocalBusiness
+	const jsonLd = {
+		"@context": "https://schema.org",
+		"@type": "BarOrPub",
+		"name": "Meraki",
+		"alternateName": "Meraki Lainate",
+		"description": siteDescription,
+		"url": siteUrl,
+		"logo": `${siteUrl}/Logo-1.png`,
+		"image": siteImage,
+		"telephone": "+393516327144",
+		"address": {
+			"@type": "PostalAddress",
+			"streetAddress": "Via Re Umberto I°, 36A",
+			"addressLocality": "Lainate",
+			"addressRegion": "MI",
+			"postalCode": "20045",
+			"addressCountry": "IT"
+		},
+		"geo": {
+			"@type": "GeoCoordinates",
+			"latitude": 45.57483921503279,
+			"longitude": 9.02737271778262
+		},
+		"openingHoursSpecification": [
+			{
+				"@type": "OpeningHoursSpecification",
+				"dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Sunday"],
+				"opens": "18:00",
+				"closes": "01:00"
+			},
+			{
+				"@type": "OpeningHoursSpecification",
+				"dayOfWeek": ["Friday", "Saturday"],
+				"opens": "18:00",
+				"closes": "02:00"
+			}
+		],
+		"sameAs": [
+			"https://www.facebook.com/meraki.lainate",
+			"https://www.instagram.com/meraki.lainate/"
+		],
+		"servesCuisine": ["Cocktails", "Drinks", "Finger Food"],
+		"priceRange": "€€"
+	};
 
 	// Initialize auth and load data on app start (only in browser)
 	onMount(async () => {
@@ -24,6 +77,36 @@
 	});
 </script>
 
+<svelte:head>
+	<!-- SEO Meta Tags -->
+	<meta name="description" content={siteDescription} />
+	<meta name="keywords" content="cocktail bar, bar lainate, aperitivo lainate, drinks, cocktails artigianali, nightlife milano, meraki" />
+	<meta name="author" content="Meraki Lainate" />
+	<meta name="robots" content="index, follow" />
+	<link rel="canonical" href={siteUrl} />
+	
+	<!-- Open Graph / Facebook -->
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content={siteUrl} />
+	<meta property="og:title" content={siteName} />
+	<meta property="og:description" content={siteDescription} />
+	<meta property="og:image" content={siteImage} />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta property="og:locale" content="it_IT" />
+	<meta property="og:site_name" content={siteName} />
+	
+	<!-- Twitter Card -->
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:url" content={siteUrl} />
+	<meta name="twitter:title" content={siteName} />
+	<meta name="twitter:description" content={siteDescription} />
+	<meta name="twitter:image" content={siteImage} />
+	
+	<!-- JSON-LD Structured Data -->
+	{@html `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>`}
+</svelte:head>
+
 <div class="layout-wrapper">
 	<main class="layout-main">
 		<slot />
@@ -39,6 +122,9 @@
 		</footer>
 	{/if}
 </div>
+
+<!-- Cookie Banner (globale) -->
+<CookieBanner />
 
 <style>
 	.layout-wrapper {
