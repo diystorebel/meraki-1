@@ -156,8 +156,8 @@
 	}
 
 	.powered-footer a {
-		color: #4a9e4a; /* Verde più chiaro per contrasto su sfondo scuro (WCAG AA) */
-		text-decoration: none;
+		color: #6ec56e; /* Verde più chiaro per contrasto su sfondo scuro (WCAG AA 4.5:1) */
+		text-decoration: underline;
 		transition: color 0.2s;
 	}
 
