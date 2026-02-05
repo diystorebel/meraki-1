@@ -323,7 +323,7 @@
 					</li>
 					<li>
 						<Package size={18} />
-						<span>I box di fritti includono due salse omaggio</span>
+						<span>Il box di fritti include due salse omaggio</span>
 					</li>
 					<li>
 						<Wheat size={18} />
