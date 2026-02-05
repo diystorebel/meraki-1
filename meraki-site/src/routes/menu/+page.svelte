@@ -792,10 +792,10 @@
 	.aperitivo-banner {
 		background: var(--primary);
 		color: white;
-		padding: 0.5rem 1rem;
+		padding: 0.65rem 1rem;
 		text-align: center;
-		font-size: 0.8rem;
-		line-height: 1.4;
+		font-size: 0.9rem;
+		line-height: 1.5;
 	}
 
 	.aperitivo-banner strong {
@@ -956,6 +956,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1.5rem;
+		padding-top: 0.1rem;
 	}
 
 	/* Category Section (per categorie con sottocategorie) */
