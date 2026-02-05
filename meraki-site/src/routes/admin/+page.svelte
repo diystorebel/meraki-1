@@ -814,64 +814,49 @@
 		{#if activeSection === 'home'}
 			<div class="content">
 				<div class="home-grid">
-					<div class="nav-card" on:click={() => activeSection = 'products'}>
+					<!-- Prodotti - Full Width -->
+					<div class="nav-card nav-card-full" on:click={() => activeSection = 'products'}>
 						<div class="nav-icon">
-							<Package size={64} strokeWidth={1.5} />
+							<Package size={40} strokeWidth={1.5} />
 						</div>
-						<h3>Gestisci Prodotti</h3>
-						<p>Aggiungi, modifica ed elimina prodotti del menu</p>
-						<div class="nav-stats">
-							<span>{$menuStore.length} prodotti</span>
-						</div>
+						<h3>Prodotti</h3>
 					</div>
+					
+					<!-- Riga 2: Categorie | Eventi -->
 					<div class="nav-card" on:click={() => activeSection = 'categories'}>
 						<div class="nav-icon">
-							<Tag size={64} strokeWidth={1.5} />
+							<Tag size={40} strokeWidth={1.5} />
 						</div>
-						<h3>Gestisci Categorie</h3>
-						<p>Organizza categorie e sottocategorie del menu</p>
-						<div class="nav-stats">
-							<span>{$categoriesStore.length} categorie</span>
-						</div>
+						<h3>Categorie</h3>
 					</div>
 					<div class="nav-card" on:click={async () => { 
 						activeSection = 'eventi'; 
 						await loadEventi(); 
 					}}>
 						<div class="nav-icon">
-							<Calendar size={64} strokeWidth={1.5} />
+							<Calendar size={40} strokeWidth={1.5} />
 						</div>
-						<h3>Gestisci Eventi</h3>
-						<p>Crea e gestisci eventi con badge NEWS</p>
-						<div class="nav-stats">
-							<span>{$eventiLoading ? 'Caricamento...' : `${$eventiStore.length} eventi`}</span>
-						</div>
+						<h3>Eventi</h3>
 					</div>
+					
+					<!-- Riga 3: Gallery | Orari -->
 					<div class="nav-card" on:click={async () => { 
 						activeSection = 'gallery'; 
 						await loadGallery(); 
 					}}>
 						<div class="nav-icon">
-							<ImageIcon size={64} strokeWidth={1.5} />
+							<ImageIcon size={40} strokeWidth={1.5} />
 						</div>
-						<h3>Gestisci Gallery</h3>
-						<p>Carica e organizza le immagini della gallery</p>
-						<div class="nav-stats">
-							<span>{$galleryLoading ? 'Caricamento...' : `${$galleryStore.length} immagini`}</span>
-						</div>
+						<h3>Gallery</h3>
 					</div>
 					<div class="nav-card" on:click={async () => { 
 						activeSection = 'orari'; 
 						await loadOrari(); 
 					}}>
 						<div class="nav-icon">
-							<Clock size={64} strokeWidth={1.5} />
+							<Clock size={40} strokeWidth={1.5} />
 						</div>
-						<h3>Gestisci Orari</h3>
-						<p>Modifica gli orari di apertura del locale</p>
-						<div class="nav-stats">
-							<span>{$orariLoading ? 'Caricamento...' : '7 giorni'}</span>
-						</div>
+						<h3>Orari</h3>
 					</div>
 				</div>
 			</div>
@@ -2533,52 +2518,62 @@
 	/* Home Grid */
 	.home-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-		gap: 2rem;
-		max-width: 900px;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 1.5rem;
+		max-width: 800px;
 		margin: 0 auto;
+	}
+
+	.nav-card-full {
+		grid-column: 1 / -1;
 	}
 
 	.nav-card {
 		background: var(--bianco);
-		padding: 2.5rem;
-		border-radius: 20px;
+		padding: 1.5rem;
+		border-radius: 16px;
 		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 		cursor: pointer;
 		transition: all 0.3s ease;
 		text-align: center;
 		border: 3px solid transparent;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.8rem;
 	}
 
 	.nav-card:hover {
-		transform: translateY(-8px);
+		transform: translateY(-5px);
 		box-shadow: 0 12px 40px rgba(21, 67, 21, 0.2);
 		border-color: var(--verde-meraki);
 	}
 
 	.nav-icon {
-		margin-bottom: 1.5rem;
 		color: var(--verde-meraki);
+		background: linear-gradient(135deg, rgba(21, 67, 21, 0.1) 0%, rgba(21, 67, 21, 0.05) 100%);
+		width: 70px;
+		height: 70px;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.3s ease;
+	}
+
+	.nav-card:hover .nav-icon {
+		transform: scale(1.1);
+		background: linear-gradient(135deg, var(--verde-meraki) 0%, var(--verde-light) 100%);
+		color: var(--bianco);
 	}
 
 	.nav-card h3 {
 		color: var(--verde-meraki);
-		font-size: 1.5rem;
-		margin-bottom: 0.8rem;
-	}
-
-	.nav-card p {
-		color: var(--grigio-scuro);
-		margin-bottom: 1.5rem;
-		line-height: 1.6;
-	}
-
-	.nav-stats {
-		padding-top: 1rem;
-		border-top: 2px solid var(--grigio);
-		color: var(--verde-meraki);
+		font-size: 1.2rem;
+		margin: 0;
 		font-weight: 600;
 	}
+
 
 	.btn-back {
 		background: var(--grigio);
@@ -5087,10 +5082,6 @@
 
 	/* Responsive */
 	@media (max-width: 768px) {
-		.home-grid {
-			grid-template-columns: 1fr;
-		}
-
 		.toolbar {
 			flex-direction: column;
 		}
