@@ -265,6 +265,15 @@
 		letter-spacing: 0.05em;
 	}
 
+	/* Scurisce le righe non weekend */
+	.orari-table tbody tr:not(.highlight) td.giorno {
+		color: #1a1a1a;
+	}
+
+	.orari-table tbody tr:not(.highlight) td.orario {
+		color: #4a4a4a;
+	}
+
 	.orari-table tbody tr.highlight td.giorno {
 		color: var(--verde-meraki);
 	}
