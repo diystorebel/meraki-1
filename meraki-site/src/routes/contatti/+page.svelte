@@ -1,5 +1,50 @@
 <script>
+	import { onMount } from 'svelte';
 	import { Home, MapPin, Phone, Clock, Facebook, Instagram } from 'lucide-svelte';
+	import { supabase } from '$lib/supabaseClient';
+
+	let orari = [];
+	let loading = true;
+
+	const GIORNI = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'];
+
+	onMount(async () => {
+		try {
+			const { data, error } = await supabase
+				.from('orari_apertura')
+				.select('*')
+				.order('giorno_settimana', { ascending: true });
+
+			if (error) throw error;
+
+			orari = data.map(o => ({
+				...o,
+				giorno_nome: GIORNI[o.giorno_settimana - 1]
+			}));
+		} catch (err) {
+			console.error('Errore caricamento orari:', err);
+		} finally {
+			loading = false;
+		}
+	});
+
+	function formatOrario(orario) {
+		if (orario.chiuso) return 'Chiuso';
+		
+		const parts = [];
+		if (orario.pranzo_inizio && orario.pranzo_fine) {
+			parts.push(`${orario.pranzo_inizio.slice(0, 5)} - ${orario.pranzo_fine.slice(0, 5)}`);
+		}
+		if (orario.sera_inizio && orario.sera_fine) {
+			parts.push(`${orario.sera_inizio.slice(0, 5)} - ${orario.sera_fine.slice(0, 5)}`);
+		}
+		
+		return parts.length > 0 ? parts.join('  ') : 'Chiuso';
+	}
+
+	function isWeekend(giorno_settimana) {
+		return giorno_settimana === 5 || giorno_settimana === 6; // Venerdì e Sabato
+	}
 </script>
 
 <svelte:head>
@@ -26,44 +71,28 @@
 					Orari di Apertura
 				</h2>
 				<div class="orari-table-wrapper">
-					<table class="orari-table">
-						<thead>
-							<tr>
-								<th>Giorno</th>
-								<th>Orario</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr>
-								<td class="giorno">Lunedì</td>
-								<td class="orario">12:00 - 14:30  18:00 - 01:00</td>
-							</tr>
-							<tr>
-								<td class="giorno">Martedì</td>
-								<td class="orario">18:00 - 01:00</td>
-							</tr>
-							<tr>
-								<td class="giorno">Mercoledì</td>
-								<td class="orario">12:00 - 14:30  18:00 - 01:00</td>
-							</tr>
-							<tr>
-								<td class="giorno">Giovedì</td>
-								<td class="orario">12:00 - 14:30  18:00 - 01:00</td>
-							</tr>
-							<tr class="highlight">
-								<td class="giorno">Venerdì</td>
-								<td class="orario">12:00 - 14:30  18:00 - 02:00</td>
-							</tr>
-							<tr class="highlight">
-								<td class="giorno">Sabato</td>
-								<td class="orario">18:00 - 02:00</td>
-							</tr>
-							<tr>
-								<td class="giorno">Domenica</td>
-								<td class="orario">18:00 - 00:00</td>
-							</tr>
-						</tbody>
-					</table>
+					{#if loading}
+						<div style="text-align: center; padding: 2rem; color: var(--grigio-scuro);">
+							Caricamento orari...
+						</div>
+					{:else}
+						<table class="orari-table">
+							<thead>
+								<tr>
+									<th>Giorno</th>
+									<th>Orario</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each orari as orario}
+									<tr class:highlight={isWeekend(orario.giorno_settimana)}>
+										<td class="giorno">{orario.giorno_nome}</td>
+										<td class="orario">{formatOrario(orario)}</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					{/if}
 				</div>
 			</div>
 

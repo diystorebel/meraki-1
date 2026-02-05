@@ -4,13 +4,14 @@
 	import { categoriesStore, addCategory, updateCategory, deleteCategory, addSubcategory, removeSubcategory, MACRO_CATEGORIES, moveCategoryOrder, moveSubcategoryOrder, updateSubcategory } from '$lib/stores/categoriesStore.js';
 	import { eventiStore, loadEventi, addEvento, updateEvento, deleteEvento, getStatoEvento, getBadgeText, eventiLoading } from '$lib/stores/eventiStore.js';
 	import { galleryStore, loadGallery, addGalleryImage, deleteGalleryImage as deleteGalleryImageFromDb, updateGalleryOrder, updateGalleryAltText, galleryLoading, themesStore, loadThemes, addTheme, updateTheme, deleteTheme, updateImageTheme, galleryByTheme } from '$lib/stores/galleryStore.js';
+	import { orariStore, loadOrari, updateOrario, orariLoading, getGiorniSettimana } from '$lib/stores/orariStore.js';
 	import { uploadMenuImage, deleteMenuImage, uploadGalleryImage, deleteGalleryImage } from '$lib/utils/imageUpload.js';
 	import { Lock, Package, Tag, Eye, Camera, Plus, Search, X, Edit, Trash2, Check, FileText, DollarSign, ArrowLeft, MousePointerClick, Home, Calendar, Clock, Image as ImageIcon, GripVertical, Palette, FolderOpen, AlertTriangle, Lightbulb, ChevronUp, ChevronDown, Wheat, Milk, Egg, Fish, Nut, Leaf, Sprout, Grape, Shell } from 'lucide-svelte';
 
 	let email = '';
 	let password = '';
 	let error = '';
-	let activeSection = 'home'; // home, products, categories, eventi, gallery
+	let activeSection = 'home'; // home, products, categories, eventi, gallery, orari
 	let editingItem = null;
 	let showModal = false;
 	let searchFilter = '';
@@ -74,6 +75,16 @@
 	let editingImageForTheme = null;
 	let selectedImageTheme = null;
 	let showThemesPanel = false; // Panel temi collassabile
+
+	// Orari management
+	let editingOrario = null;
+	let orarioFormData = {
+		pranzo_inizio: '',
+		pranzo_fine: '',
+		sera_inizio: '',
+		sera_fine: '',
+		chiuso: false
+	};
 
 	// Modal System
 	let showConfirmModal = false;
@@ -847,6 +858,19 @@
 						<p>Carica e organizza le immagini della gallery</p>
 						<div class="nav-stats">
 							<span>{$galleryLoading ? 'Caricamento...' : `${$galleryStore.length} immagini`}</span>
+						</div>
+					</div>
+					<div class="nav-card" on:click={async () => { 
+						activeSection = 'orari'; 
+						await loadOrari(); 
+					}}>
+						<div class="nav-icon">
+							<Clock size={64} strokeWidth={1.5} />
+						</div>
+						<h3>Gestisci Orari</h3>
+						<p>Modifica gli orari di apertura del locale</p>
+						<div class="nav-stats">
+							<span>{$orariLoading ? 'Caricamento...' : '7 giorni'}</span>
 						</div>
 					</div>
 				</div>
@@ -2214,6 +2238,157 @@
 						</button>
 					</div>
 				</div>
+			</div>
+		{/if}
+
+		<!-- Orari Section -->
+		{#if activeSection === 'orari'}
+			<div class="content">
+				<button class="btn-back" on:click={() => activeSection = 'home'}>
+					<ArrowLeft size={20} />
+					Torna alla Home
+				</button>
+
+				<div class="section-header">
+					<h2>Gestione Orari di Apertura</h2>
+					<p class="section-subtitle">Modifica gli orari di apertura per ogni giorno della settimana</p>
+				</div>
+
+				{#if $orariLoading}
+					<div class="loading-state">
+						<Clock size={48} />
+						<p>Caricamento orari...</p>
+					</div>
+				{:else}
+					<div class="orari-grid">
+						{#each $orariStore as orario (orario.giorno_settimana)}
+							<div class="orario-card" class:chiuso={orario.chiuso}>
+								<div class="orario-header">
+									<h3>{orario.giorno_nome}</h3>
+									<label class="switch">
+										<input 
+											type="checkbox" 
+											checked={orario.chiuso}
+											on:change={async (e) => {
+												try {
+													await updateOrario(orario.giorno_settimana, {
+														...orario,
+														chiuso: e.target.checked,
+														pranzo_inizio: e.target.checked ? null : orario.pranzo_inizio,
+														pranzo_fine: e.target.checked ? null : orario.pranzo_fine,
+														sera_inizio: e.target.checked ? null : orario.sera_inizio,
+														sera_fine: e.target.checked ? null : orario.sera_fine
+													});
+												} catch (err) {
+													alert('Errore aggiornamento: ' + err.message);
+												}
+											}}
+										/>
+										<span class="slider"></span>
+									</label>
+									<span class="chiuso-label">{orario.chiuso ? 'Chiuso' : 'Aperto'}</span>
+								</div>
+
+								{#if !orario.chiuso}
+									<div class="orario-turni">
+										<!-- Turno Pranzo -->
+										<div class="turno-section">
+											<h4>Pranzo</h4>
+											<div class="time-inputs">
+												<input 
+													type="time" 
+													value={orario.pranzo_inizio || ''}
+													placeholder="Inizio"
+													on:blur={async (e) => {
+														try {
+															await updateOrario(orario.giorno_settimana, {
+																...orario,
+																pranzo_inizio: e.target.value || null
+															});
+														} catch (err) {
+															alert('Errore: ' + err.message);
+														}
+													}}
+												/>
+												<span>-</span>
+												<input 
+													type="time" 
+													value={orario.pranzo_fine || ''}
+													placeholder="Fine"
+													on:blur={async (e) => {
+														try {
+															await updateOrario(orario.giorno_settimana, {
+																...orario,
+																pranzo_fine: e.target.value || null
+															});
+														} catch (err) {
+															alert('Errore: ' + err.message);
+														}
+													}}
+												/>
+											</div>
+										</div>
+
+										<!-- Turno Sera -->
+										<div class="turno-section">
+											<h4>Sera</h4>
+											<div class="time-inputs">
+												<input 
+													type="time" 
+													value={orario.sera_inizio || ''}
+													placeholder="Inizio"
+													on:blur={async (e) => {
+														try {
+															await updateOrario(orario.giorno_settimana, {
+																...orario,
+																sera_inizio: e.target.value || null
+															});
+														} catch (err) {
+															alert('Errore: ' + err.message);
+														}
+													}}
+												/>
+												<span>-</span>
+												<input 
+													type="time" 
+													value={orario.sera_fine || ''}
+													placeholder="Fine"
+													on:blur={async (e) => {
+														try {
+															await updateOrario(orario.giorno_settimana, {
+																...orario,
+																sera_fine: e.target.value || null
+															});
+														} catch (err) {
+															alert('Errore: ' + err.message);
+														}
+													}}
+												/>
+											</div>
+										</div>
+									</div>
+
+									<!-- Preview orario -->
+									<div class="orario-preview">
+										{#if orario.pranzo_inizio && orario.pranzo_fine}
+											<span class="preview-turno">🍽️ {orario.pranzo_inizio} - {orario.pranzo_fine}</span>
+										{/if}
+										{#if orario.sera_inizio && orario.sera_fine}
+											<span class="preview-turno">🌙 {orario.sera_inizio} - {orario.sera_fine}</span>
+										{/if}
+										{#if !orario.pranzo_inizio && !orario.pranzo_fine && !orario.sera_inizio && !orario.sera_fine}
+											<span class="preview-empty">Nessun orario impostato</span>
+										{/if}
+									</div>
+								{:else}
+									<div class="chiuso-message">
+										<p>Il locale è chiuso in questo giorno</p>
+									</div>
+								{/if}
+							</div>
+						{/each}
+					</div>
+				{/if}
 			</div>
 		{/if}
 	</div>
@@ -5025,6 +5200,187 @@
 		.gallery-filters {
 			padding-left: 0.5rem;
 			padding-right: 0.5rem;
+		}
+	}
+
+	/* Orari Section */
+	.orari-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+		gap: 1.5rem;
+		margin-top: 2rem;
+	}
+
+	.orario-card {
+		background: var(--bianco);
+		border-radius: 16px;
+		padding: 1.5rem;
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+		border: 2px solid transparent;
+		transition: all 0.3s ease;
+	}
+
+	.orario-card:hover {
+		border-color: var(--verde-meraki);
+		transform: translateY(-4px);
+		box-shadow: 0 8px 24px rgba(21, 67, 21, 0.15);
+	}
+
+	.orario-card.chiuso {
+		opacity: 0.6;
+		background: var(--grigio-chiaro);
+	}
+
+	.orario-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 1.5rem;
+		padding-bottom: 1rem;
+		border-bottom: 2px solid var(--grigio);
+	}
+
+	.orario-header h3 {
+		color: var(--verde-meraki);
+		font-size: 1.4rem;
+		margin: 0;
+	}
+
+	.chiuso-label {
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--grigio-scuro);
+		margin-left: 0.5rem;
+	}
+
+	/* Toggle Switch */
+	.switch {
+		position: relative;
+		display: inline-block;
+		width: 50px;
+		height: 26px;
+	}
+
+	.switch input {
+		opacity: 0;
+		width: 0;
+		height: 0;
+	}
+
+	.slider {
+		position: absolute;
+		cursor: pointer;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-color: var(--verde-meraki);
+		transition: 0.4s;
+		border-radius: 26px;
+	}
+
+	.slider:before {
+		position: absolute;
+		content: "";
+		height: 20px;
+		width: 20px;
+		left: 3px;
+		bottom: 3px;
+		background-color: white;
+		transition: 0.4s;
+		border-radius: 50%;
+	}
+
+	input:checked + .slider {
+		background-color: #dc2626;
+	}
+
+	input:checked + .slider:before {
+		transform: translateX(24px);
+	}
+
+	/* Turni */
+	.orario-turni {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.turno-section h4 {
+		color: var(--nero);
+		font-size: 1rem;
+		margin-bottom: 0.5rem;
+		font-weight: 600;
+	}
+
+	.time-inputs {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.time-inputs input[type="time"] {
+		flex: 1;
+		padding: 0.7rem;
+		border: 2px solid var(--grigio);
+		border-radius: 8px;
+		font-size: 1rem;
+		transition: all 0.3s ease;
+	}
+
+	.time-inputs input[type="time"]:focus {
+		outline: none;
+		border-color: var(--verde-meraki);
+		box-shadow: 0 0 0 3px rgba(21, 67, 21, 0.1);
+	}
+
+	.time-inputs span {
+		color: var(--grigio-scuro);
+		font-weight: 600;
+	}
+
+	/* Preview */
+	.orario-preview {
+		margin-top: 1.5rem;
+		padding-top: 1rem;
+		border-top: 2px solid var(--grigio);
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.preview-turno {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.5rem 1rem;
+		background: linear-gradient(135deg, rgba(21, 67, 21, 0.1) 0%, rgba(21, 67, 21, 0.05) 100%);
+		border-radius: 8px;
+		color: var(--verde-meraki);
+		font-weight: 600;
+		font-size: 0.95rem;
+	}
+
+	.preview-empty {
+		color: var(--grigio-scuro);
+		font-style: italic;
+		font-size: 0.9rem;
+	}
+
+	.chiuso-message {
+		text-align: center;
+		padding: 2rem 1rem;
+		color: var(--grigio-scuro);
+	}
+
+	.chiuso-message p {
+		margin: 0;
+		font-style: italic;
+	}
+
+	@media (max-width: 768px) {
+		.orari-grid {
+			grid-template-columns: 1fr;
 		}
 	}
 </style>
