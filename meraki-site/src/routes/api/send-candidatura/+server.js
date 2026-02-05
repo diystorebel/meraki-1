@@ -63,10 +63,10 @@ export async function POST({ request }) {
 			return json({ error: 'Servizio email non configurato' }, { status: 500 });
 		}
 
-		// Payload per Resend
-		const emailPayload = {
-			from: 'Meraki Candidature <onboarding@resend.dev>', // Dominio gratuito Resend
-			to: [EMAIL_DESTINATARIO],
+	// Payload per Resend
+	const emailPayload = {
+		from: 'Meraki Candidature <candidature@merakilainate.it>',
+		to: [EMAIL_DESTINATARIO],
 			reply_to: email, // Risposta diretta al candidato
 			subject: `🧑‍💼 Nuova Candidatura: ${nome} ${cognome}`,
 			html: emailHTML,
