@@ -17,24 +17,24 @@
 
 	<main>
 		<div class="options-grid">
-			<!-- V1 -->
-			<a href="/menu-v1" class="option-card v1">
-				<div class="card-header">
-					<span class="version">V1</span>
-					<Layers size={28} />
-				</div>
-				<h2>Tab + Chips</h2>
-				<p>3 tab grandi per le macro-categorie, poi chips scrollabili per le sottocategorie.</p>
-				<ul class="pros">
-					<li>✓ Navigazione chiara a 2 livelli</li>
-					<li>✓ Simile al menu attuale, evoluto</li>
-					<li>✓ Sottocategorie sempre visibili</li>
-				</ul>
-				<div class="card-cta">
-					<span>Prova questa versione</span>
-					<ArrowRight size={20} />
-				</div>
-			</a>
+		<!-- V1 -->
+		<a href="/menu" class="option-card v1">
+			<div class="card-header">
+				<span class="version">V1</span>
+				<Layers size={28} />
+			</div>
+			<h2>Tab + Chips</h2>
+			<p>3 tab grandi per le macro-categorie, poi chips scrollabili per le sottocategorie.</p>
+			<ul class="pros">
+				<li>✓ Navigazione chiara a 2 livelli</li>
+				<li>✓ Simile al menu attuale, evoluto</li>
+				<li>✓ Sottocategorie sempre visibili</li>
+			</ul>
+			<div class="card-cta">
+				<span>Prova questa versione</span>
+				<ArrowRight size={20} />
+			</div>
+		</a>
 
 			<!-- V2 -->
 			<a href="/menu-v2" class="option-card v2">

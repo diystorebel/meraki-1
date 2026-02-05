@@ -2,8 +2,7 @@ import { json } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 
 // Configurazione destinatario email
-// TODO: Cambiare con email ufficiale Meraki quando disponibile
-const EMAIL_DESTINATARIO = 'gmar.scio@gmail.com';
+const EMAIL_DESTINATARIO = 'meraki.lainate@gmail.com';
 
 export async function POST({ request }) {
 	try {

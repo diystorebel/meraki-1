@@ -10,7 +10,7 @@
 	let contentReady = false;
 
 	// SEO Configuration
-	const siteUrl = 'https://merakilainate.it';
+	const siteUrl = 'https://www.merakilainate.it';
 	const siteName = 'Meraki Lainate';
 	const siteDescription = 'Cocktail bar a Lainate. Scopri i nostri cocktails artigianali, drinks e food in un\'atmosfera unica. L\'essenza di noi stessi.';
 	const siteImage = `${siteUrl}/og-image.jpg`;
