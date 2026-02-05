@@ -147,22 +147,22 @@
 	.powered-footer p {
 		margin: 0;
 		font-size: 0.75rem;
-		color: #888;
+		color: #b3b3b3; /* Aumentato da #888 per contrasto WCAG AA (4.5:1) */
 		letter-spacing: 0.02em;
 	}
 
 	.powered-footer strong {
-		color: #aaa;
+		color: #d4d4d4; /* Aumentato da #aaa per migliore contrasto */
 	}
 
 	.powered-footer a {
-		color: var(--verde-meraki, #154315);
+		color: #4a9e4a; /* Verde più chiaro per contrasto su sfondo scuro (WCAG AA) */
 		text-decoration: none;
 		transition: color 0.2s;
 	}
 
 	.powered-footer a:hover {
-		color: var(--verde-light, #2d7a2d);
+		color: #6bb86b; /* Verde ancora più chiaro al hover */
 		text-decoration: underline;
 	}
 
@@ -170,7 +170,7 @@
 		display: block;
 		margin-top: 0.25rem;
 		font-size: 0.65rem;
-		color: #666;
+		color: #999; /* Aumentato da #666 per contrasto WCAG AA */
 		font-style: italic;
 	}
 
