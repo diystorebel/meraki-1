@@ -48,6 +48,25 @@
 
 <svelte:head>
 	<title>Meraki - L'essenza di noi stessi</title>
+	<meta name="description" content="Cocktail bar a Lainate. Scopri i nostri cocktails artigianali, drinks e food in un'atmosfera unica. L'essenza di noi stessi." />
+	
+	<!-- Open Graph / Facebook -->
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content="https://merakilainate.it/" />
+	<meta property="og:title" content="Meraki - L'essenza di noi stessi" />
+	<meta property="og:description" content="Cocktail bar a Lainate. Scopri i nostri cocktails artigianali, drinks e food in un'atmosfera unica." />
+	<meta property="og:image" content="https://merakilainate.it/og-image.jpg" />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta property="og:locale" content="it_IT" />
+	<meta property="og:site_name" content="Meraki Lainate" />
+	
+	<!-- Twitter Card -->
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content="Meraki - L'essenza di noi stessi" />
+	<meta name="twitter:description" content="Cocktail bar a Lainate. Scopri i nostri cocktails artigianali, drinks e food." />
+	<meta name="twitter:image" content="https://merakilainate.it/og-image.jpg" />
+	
 	<!-- Preload font critico per LCP -->
 	<link rel="preload" href="https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0&display=swap" as="style">
 	<link rel="preconnect" href="https://fonts.googleapis.com">
