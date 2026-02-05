@@ -56,11 +56,10 @@
 		// Carica eventi visibili (in corso o in arrivo)
 		eventiVisibili = await loadEventiVisibili();
 		
-		// Mostra popup se ci sono eventi E non è già stato mostrato in questa sessione
-		if (eventiVisibili.length > 0 && !sessionStorage.getItem('eventoPopupShown')) {
+		// Mostra popup se ci sono eventi
+		if (eventiVisibili.length > 0) {
 			eventoCorrente = eventiVisibili[0]; // Mostra il primo evento
 			showEventoPopup = true;
-			sessionStorage.setItem('eventoPopupShown', 'true');
 		}
 	});
 
