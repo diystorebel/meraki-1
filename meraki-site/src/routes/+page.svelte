@@ -48,11 +48,11 @@
 
 <svelte:head>
 	<title>Meraki - L'essenza di noi stessi</title>
-	<!-- Google Font DM Serif Text - ottimizzato per performance -->
+	<!-- Preload font critico per LCP -->
+	<link rel="preload" href="https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0&display=swap" as="style">
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-	<noscript><link href="https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&display=swap" rel="stylesheet"></noscript>
+	<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0&display=swap" rel="stylesheet">
 </svelte:head>
 
 <!-- Splash Screen -->
@@ -70,7 +70,7 @@
 	<div class="dashboard" transition:fade={{ duration: 600 }}>
 		<!-- Logo -->
 		<div class="logo-container">
-			<img src="/Logo-1.png" alt="Meraki Logo" class="dashboard-logo" width="1200" height="413" />
+			<img src="/Logo-1.png" alt="Meraki Logo" class="dashboard-logo" width="1200" height="413" fetchpriority="high" decoding="async" />
 		</div>
 
 		<!-- Dashboard Grid -->
