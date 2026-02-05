@@ -36,7 +36,7 @@
 						<tbody>
 							<tr>
 								<td class="giorno">Lunedì</td>
-								<td class="orario">18:00 - 01:00</td>
+								<td class="orario">12:00 - 14:30  18:00 - 01:00</td>
 							</tr>
 							<tr>
 								<td class="giorno">Martedì</td>
@@ -44,15 +44,15 @@
 							</tr>
 							<tr>
 								<td class="giorno">Mercoledì</td>
-								<td class="orario">18:00 - 01:00</td>
+								<td class="orario">12:00 - 14:30  18:00 - 01:00</td>
 							</tr>
 							<tr>
 								<td class="giorno">Giovedì</td>
-								<td class="orario">18:00 - 01:00</td>
+								<td class="orario">12:00 - 14:30  18:00 - 01:00</td>
 							</tr>
 							<tr class="highlight">
 								<td class="giorno">Venerdì</td>
-								<td class="orario">18:00 - 02:00</td>
+								<td class="orario">12:00 - 14:30  18:00 - 02:00</td>
 							</tr>
 							<tr class="highlight">
 								<td class="giorno">Sabato</td>
@@ -60,7 +60,7 @@
 							</tr>
 							<tr>
 								<td class="giorno">Domenica</td>
-								<td class="orario">18:00 - 01:00</td>
+								<td class="orario">18:00 - 00:00</td>
 							</tr>
 						</tbody>
 					</table>
