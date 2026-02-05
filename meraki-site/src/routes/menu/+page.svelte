@@ -286,6 +286,11 @@
 		{/each}
 	</div>
 
+	<!-- Banner Aperitivo - Compatto sotto tabs -->
+	<div class="aperitivo-banner">
+		<span><strong>Aperitivo fino alle 21:00!</strong> Aggiungi +€3 al drink (€5 no glutine/lattosio) e gusta gli stuzzichini dello chef!</span>
+	</div>
+
 	<!-- Main Content -->
 	<main class="content-area">
 		{#if searchTerm.trim()}
@@ -781,6 +786,20 @@
 	.menu-footer a:hover {
 		opacity: 0.7;
 		text-decoration: underline;
+	}
+
+	/* Banner Aperitivo - Compatto */
+	.aperitivo-banner {
+		background: var(--primary);
+		color: white;
+		padding: 0.5rem 1rem;
+		text-align: center;
+		font-size: 0.8rem;
+		line-height: 1.4;
+	}
+
+	.aperitivo-banner strong {
+		font-weight: 700;
 	}
 
 	/* Top Bar */
