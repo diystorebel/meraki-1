@@ -63,7 +63,7 @@
 	<div class="dashboard" transition:fade={{ duration: 600 }}>
 		<!-- Logo -->
 		<div class="logo-container">
-			<img src="/Logo-1.png" alt="Meraki Logo" class="dashboard-logo" />
+			<img src="/Logo-1.png" alt="Meraki Logo" class="dashboard-logo" width="1200" height="413" />
 		</div>
 
 		<!-- Dashboard Grid -->

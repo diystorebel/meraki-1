@@ -21,7 +21,7 @@
 		<div class="container">
 			<!-- Foto di gruppo -->
 			<div class="hero-image">
-				<img src="/foto_gruppo.jpg" alt="Team Meraki" />
+				<img src="/foto_gruppo.jpg" alt="Team Meraki" width="640" height="360" />
 			</div>
 
 			<div class="content-card">
