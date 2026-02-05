@@ -5,7 +5,7 @@
 	import { eventiStore, loadEventiVisibili, getStatoEvento, getBadgeText } from '$lib/stores/eventiStore.js';
 	import { smartSearch } from '$lib/utils/smartSearch.js';
 	import { fade, slide } from 'svelte/transition';
-	import { X, Search, Home, ChevronDown, ArrowLeft, Calendar, Phone, Wine } from 'lucide-svelte';
+	import { X, Search, Home, ChevronDown, ArrowLeft, Calendar, Phone, Wine, Info, Salad, Package, Wheat, Martini } from 'lucide-svelte';
 	import AllergenIcons from '$lib/components/AllergenIcons.svelte';
 
 	// Macro-categorie configurabili - ora usano il campo macro_category dal DB
@@ -293,6 +293,9 @@
 		on:click={() => aperitivoDropdownOpen = true}
 	>
 		<div class="banner-content-wrapper">
+			<div class="banner-icon-left">
+				<Martini size={24} />
+			</div>
 			<div class="banner-text-wrapper">
 				<span class="banner-title">Vuoi fare aperitivo?</span>
 				<span class="banner-subtitle">Scopri la nostra formula</span>
@@ -306,6 +309,30 @@
 
 	<!-- Main Content -->
 	<main class="content-area">
+		<!-- Banner Info Cucina -->
+		{#if selectedMacro.id === 'kitchen' && !searchTerm.trim()}
+			<div class="kitchen-info-banner">
+				<h4>
+					<Info size={20} />
+					Info utili
+				</h4>
+				<ul>
+					<li>
+						<Salad size={18} />
+						<span>Ogni fritto include una salsa omaggio</span>
+					</li>
+					<li>
+						<Package size={18} />
+						<span>I box di fritti includono due salse omaggio</span>
+					</li>
+					<li>
+						<Wheat size={18} />
+						<span>Tutti i panini possono essere preparati con piadina senza glutine</span>
+					</li>
+				</ul>
+			</div>
+		{/if}
+		
 		{#if searchTerm.trim()}
 			<!-- Search Results -->
 			{#if filteredItems.length > 0}
@@ -889,11 +916,11 @@
 	.banner-content-wrapper {
 		display: flex;
 		align-items: center;
-		gap: 0.85rem;
+		justify-content: center;
+		gap: 0.75rem;
 		position: relative;
 		z-index: 1;
 		width: 100%;
-		max-width: 400px;
 	}
 
 	.banner-icon-left {
@@ -908,6 +935,28 @@
 		border-radius: 50%;
 	}
 
+	.banner-text-wrapper {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.1rem;
+		text-align: center;
+		flex: 1;
+	}
+
+	.banner-title {
+		font-size: 1.2rem;
+		font-weight: 700;
+		color: #ffffff;
+		letter-spacing: 0.01em;
+	}
+
+	.banner-subtitle {
+		font-size: 0.8rem;
+		color: rgba(255, 255, 255, 0.85);
+		font-weight: 500;
+	}
+
 	.banner-cta {
 		color: rgba(255, 255, 255, 0.9);
 		flex-shrink: 0;
@@ -915,7 +964,6 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		margin-left: auto;
 		gap: 0.1rem;
 	}
 
@@ -934,28 +982,6 @@
 	@keyframes nudge {
 		0%, 100% { transform: translateY(0); }
 		50% { transform: translateY(3px); }
-	}
-
-	.banner-text-wrapper {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 0.1rem;
-		text-align: left;
-		flex: 1;
-	}
-
-	.banner-title {
-		font-size: 1.05rem;
-		font-weight: 700;
-		color: #ffffff;
-		letter-spacing: 0.01em;
-	}
-
-	.banner-subtitle {
-		font-size: 0.8rem;
-		color: rgba(255, 255, 255, 0.85);
-		font-weight: 500;
 	}
 
 	/* Aperitivo Popup */
@@ -1679,6 +1705,51 @@
 	.content-area {
 		padding: 0.2rem 1rem 1rem;
 		background: transparent;
+	}
+	
+	/* Kitchen Info Banner */
+	.kitchen-info-banner {
+		background: linear-gradient(135deg, #f0f8f0 0%, #e8f4e8 100%);
+		border: 2px solid rgba(21, 67, 21, 0.15);
+		border-radius: 16px;
+		padding: 1.25rem 1.5rem;
+		margin-top: 1.5rem;
+		margin-bottom: 1.5rem;
+		box-shadow: 0 4px 12px rgba(21, 67, 21, 0.08);
+	}
+	
+	.kitchen-info-banner h4 {
+		font-family: 'DM Serif Text', serif;
+		font-size: 1.1rem;
+		color: var(--primary);
+		margin: 0 0 0.75rem 0;
+		font-weight: 600;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	
+	.kitchen-info-banner ul {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+	}
+	
+	.kitchen-info-banner li {
+		font-size: 0.95rem;
+		color: #555;
+		line-height: 1.5;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	
+	.kitchen-info-banner li :global(svg) {
+		color: var(--primary);
+		flex-shrink: 0;
 	}
 
 	.products-grid {
