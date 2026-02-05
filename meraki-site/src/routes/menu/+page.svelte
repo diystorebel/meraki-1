@@ -297,6 +297,10 @@
 				<span class="banner-title">Vuoi fare aperitivo?</span>
 				<span class="banner-subtitle">Scopri la nostra formula</span>
 			</div>
+			<div class="banner-cta">
+				<span class="cta-text">clicca</span>
+				<ChevronDown size={16} />
+			</div>
 		</div>
 	</button>
 
