@@ -1268,15 +1268,15 @@
 
 							<div class="form-row-modern">
 								<div class="form-group-modern">
-									<label>Data Inizio (Pubblicazione) *</label>
+									<label>Data Inizio *</label>
 									<input type="date" bind:value={eventoFormData.data_inizio} required class="input-modern" />
-									<span class="help-text">Badge NEWS appare da questa data</span>
+									<span class="help-text">Badge NEWS attivo da questa data</span>
 								</div>
 
 								<div class="form-group-modern">
 									<label>Data Fine *</label>
 									<input type="date" bind:value={eventoFormData.data_fine} required class="input-modern" />
-									<span class="help-text">Badge NEWS scompare dopo questa data</span>
+									<span class="help-text">Badge NEWS termina dopo questa data</span>
 								</div>
 							</div>
 
@@ -5104,6 +5104,30 @@
 
 		.form-row-modern {
 			grid-template-columns: 1fr;
+		}
+
+		/* Fix modal eventi mobile */
+		.modal-modern {
+			max-width: 95vw;
+			max-height: 90vh;
+			margin: 1rem;
+		}
+
+		.input-modern,
+		.select-modern,
+		.textarea-modern {
+			font-size: 16px; /* Previene zoom su iOS */
+			padding: 0.75rem;
+		}
+
+		.help-text {
+			font-size: 0.75rem;
+			line-height: 1.3;
+			word-wrap: break-word;
+		}
+
+		.form-group-modern label {
+			font-size: 0.9rem;
 		}
 
 		.variant-item {
