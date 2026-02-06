@@ -1,88 +1,88 @@
 <script>
-	// 14 allergeni obbligatori EU con icone e descrizioni
+	// 14 allergeni obbligatori EU con icone e descrizioni (WebP ottimizzate)
 	const ALLERGENI = [
 		{ 
 			id: 'glutine', 
 			label: 'Glutine', 
-			src: '/icone-allergeni/glutine.png',
+			src: '/icone-allergeni/glutine.webp',
 			description: 'Cereali contenenti glutine (grano, segale, orzo, avena, farro, kamut)'
 		},
 		{ 
 			id: 'latticini', 
 			label: 'Latte e derivati', 
-			src: '/icone-allergeni/latticini.png',
+			src: '/icone-allergeni/latticini.webp',
 			description: 'Latte e prodotti a base di latte, incluso il lattosio'
 		},
 		{ 
 			id: 'uova', 
 			label: 'Uova', 
-			src: '/icone-allergeni/uova.png',
+			src: '/icone-allergeni/uova.webp',
 			description: 'Uova e prodotti a base di uova'
 		},
 		{ 
 			id: 'pesce', 
 			label: 'Pesce', 
-			src: '/icone-allergeni/pesce.png',
+			src: '/icone-allergeni/pesce.webp',
 			description: 'Pesci e prodotti a base di pesce'
 		},
 		{ 
 			id: 'crostacei', 
 			label: 'Crostacei', 
-			src: '/icone-allergeni/crostacei.png',
+			src: '/icone-allergeni/crostacei.webp',
 			description: 'Crostacei e prodotti a base di crostacei'
 		},
 		{ 
 			id: 'molluschi', 
 			label: 'Molluschi', 
-			src: '/icone-allergeni/molluschi.png',
+			src: '/icone-allergeni/molluschi.webp',
 			description: 'Molluschi e prodotti a base di molluschi'
 		},
 		{ 
 			id: 'arachidi', 
 			label: 'Arachidi', 
-			src: '/icone-allergeni/arachidi.png',
+			src: '/icone-allergeni/arachidi.webp',
 			description: 'Arachidi e prodotti a base di arachidi'
 		},
 		{ 
 			id: 'frutta_guscio', 
 			label: 'Frutta a guscio', 
-			src: '/icone-allergeni/frutta_guscio.png',
+			src: '/icone-allergeni/frutta_guscio.webp',
 			description: 'Mandorle, nocciole, noci, anacardi, pistacchi, noci macadamia, noci del Brasile, noci pecan'
 		},
 		{ 
 			id: 'soia', 
 			label: 'Soia', 
-			src: '/icone-allergeni/soia.png',
+			src: '/icone-allergeni/soia.webp',
 			description: 'Soia e prodotti a base di soia'
 		},
 		{ 
 			id: 'sedano', 
 			label: 'Sedano', 
-			src: '/icone-allergeni/sedano.png',
+			src: '/icone-allergeni/sedano.webp',
 			description: 'Sedano e prodotti a base di sedano'
 		},
 		{ 
 			id: 'senape', 
 			label: 'Senape', 
-			src: '/icone-allergeni/senape.png',
+			src: '/icone-allergeni/senape.webp',
 			description: 'Senape e prodotti a base di senape'
 		},
 		{ 
 			id: 'sesamo', 
 			label: 'Sesamo', 
-			src: '/icone-allergeni/sesamo.png',
+			src: '/icone-allergeni/sesamo.webp',
 			description: 'Semi di sesamo e prodotti a base di semi di sesamo'
 		},
 		{ 
 			id: 'solfiti', 
 			label: 'Anidride solforosa e solfiti', 
-			src: '/icone-allergeni/solfiti.png',
+			src: '/icone-allergeni/solfiti.webp',
 			description: 'Anidride solforosa e solfiti in concentrazioni superiori a 10 mg/kg o 10 mg/l'
 		},
 		{ 
 			id: 'lupini', 
 			label: 'Lupini', 
-			src: '/icone-allergeni/lupini.png',
+			src: '/icone-allergeni/lupini.webp',
 			description: 'Lupini e prodotti a base di lupini'
 		}
 	];

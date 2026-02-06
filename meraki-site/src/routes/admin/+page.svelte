@@ -174,22 +174,22 @@
 		return existingSubcat ? existingSubcat.name : toTitleCase(subcategoryInput.trim());
 	}
 	
-	// Lista allergeni disponibili (14 allergeni obbligatori EU) con icone
+	// Lista allergeni disponibili (14 allergeni obbligatori EU) con icone WebP ottimizzate
 	const AVAILABLE_ALLERGENS = [
-		{ id: 'glutine', label: 'Glutine', src: '/icone-allergeni/glutine.png' },
-		{ id: 'latticini', label: 'Latticini', src: '/icone-allergeni/latticini.png' },
-		{ id: 'uova', label: 'Uova', src: '/icone-allergeni/uova.png' },
-		{ id: 'pesce', label: 'Pesce', src: '/icone-allergeni/pesce.png' },
-		{ id: 'arachidi', label: 'Arachidi', src: '/icone-allergeni/arachidi.png' },
-		{ id: 'frutta_guscio', label: 'Frutta a guscio', src: '/icone-allergeni/frutta_guscio.png' },
-		{ id: 'soia', label: 'Soia', src: '/icone-allergeni/soia.png' },
-		{ id: 'sedano', label: 'Sedano', src: '/icone-allergeni/sedano.png' },
-		{ id: 'senape', label: 'Senape', src: '/icone-allergeni/senape.png' },
-		{ id: 'sesamo', label: 'Sesamo', src: '/icone-allergeni/sesamo.png' },
-		{ id: 'solfiti', label: 'Solfiti', src: '/icone-allergeni/solfiti.png' },
-		{ id: 'crostacei', label: 'Crostacei', src: '/icone-allergeni/crostacei.png' },
-		{ id: 'molluschi', label: 'Molluschi', src: '/icone-allergeni/molluschi.png' },
-		{ id: 'lupini', label: 'Lupini', src: '/icone-allergeni/lupini.png' }
+		{ id: 'glutine', label: 'Glutine', src: '/icone-allergeni/glutine.webp' },
+		{ id: 'latticini', label: 'Latticini', src: '/icone-allergeni/latticini.webp' },
+		{ id: 'uova', label: 'Uova', src: '/icone-allergeni/uova.webp' },
+		{ id: 'pesce', label: 'Pesce', src: '/icone-allergeni/pesce.webp' },
+		{ id: 'arachidi', label: 'Arachidi', src: '/icone-allergeni/arachidi.webp' },
+		{ id: 'frutta_guscio', label: 'Frutta a guscio', src: '/icone-allergeni/frutta_guscio.webp' },
+		{ id: 'soia', label: 'Soia', src: '/icone-allergeni/soia.webp' },
+		{ id: 'sedano', label: 'Sedano', src: '/icone-allergeni/sedano.webp' },
+		{ id: 'senape', label: 'Senape', src: '/icone-allergeni/senape.webp' },
+		{ id: 'sesamo', label: 'Sesamo', src: '/icone-allergeni/sesamo.webp' },
+		{ id: 'solfiti', label: 'Solfiti', src: '/icone-allergeni/solfiti.webp' },
+		{ id: 'crostacei', label: 'Crostacei', src: '/icone-allergeni/crostacei.webp' },
+		{ id: 'molluschi', label: 'Molluschi', src: '/icone-allergeni/molluschi.webp' },
+		{ id: 'lupini', label: 'Lupini', src: '/icone-allergeni/lupini.webp' }
 	];
 	
 	function toggleAllergen(allergenId) {

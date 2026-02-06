@@ -8,3 +8,9 @@ Sitemap: https://www.merakilainate.it/sitemap.xml
 # Disallow admin area
 Disallow: /admin
 Disallow: /api/
+
+# Disallow demo/test menu versions
+Disallow: /menu-demo
+Disallow: /menu-v2
+Disallow: /menu-v3
+Disallow: /menu-v4
