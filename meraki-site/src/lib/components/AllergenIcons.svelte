@@ -1,26 +1,24 @@
 <script>
-	import { Wheat, Milk, Egg, Fish, Nut, Leaf, Sprout, AlertCircle, Droplet, Grape, Shell } from 'lucide-svelte';
-	
 	export let allergens = [];
-	export let size = 14;
+	export let size = 20;
 	export let className = '';
 	
-	// Mapping allergeni -> icone Lucide
+	// Mapping allergeni -> icone custom verdi
 	const allergenIconMap = {
-		glutine: { icon: Wheat, label: 'Glutine' },
-		latticini: { icon: Milk, label: 'Latticini' },
-		uova: { icon: Egg, label: 'Uova' },
-		pesce: { icon: Fish, label: 'Pesce' },
-		arachidi: { icon: Nut, label: 'Arachidi' },
-		frutta_guscio: { icon: Nut, label: 'Frutta a guscio' },
-		soia: { icon: Leaf, label: 'Soia' },
-		sedano: { icon: Sprout, label: 'Sedano' },
-		senape: { icon: Sprout, label: 'Senape' },
-		sesamo: { icon: Sprout, label: 'Sesamo' },
-		solfiti: { icon: Grape, label: 'Solfiti' },
-		crostacei: { icon: Shell, label: 'Crostacei' },
-		molluschi: { icon: Shell, label: 'Molluschi' },
-		lupini: { icon: Leaf, label: 'Lupini' }
+		glutine: { src: '/icone-allergeni/glutine.png', label: 'Glutine' },
+		latticini: { src: '/icone-allergeni/latticini.png', label: 'Latticini' },
+		uova: { src: '/icone-allergeni/uova.png', label: 'Uova' },
+		pesce: { src: '/icone-allergeni/pesce.png', label: 'Pesce' },
+		arachidi: { src: '/icone-allergeni/arachidi.png', label: 'Arachidi' },
+		frutta_guscio: { src: '/icone-allergeni/frutta_guscio.png', label: 'Frutta a guscio' },
+		soia: { src: '/icone-allergeni/soia.png', label: 'Soia' },
+		sedano: { src: '/icone-allergeni/sedano.png', label: 'Sedano' },
+		senape: { src: '/icone-allergeni/senape.png', label: 'Senape' },
+		sesamo: { src: '/icone-allergeni/sesamo.png', label: 'Sesamo' },
+		solfiti: { src: '/icone-allergeni/solfiti.png', label: 'Solfiti' },
+		crostacei: { src: '/icone-allergeni/crostacei.png', label: 'Crostacei' },
+		molluschi: { src: '/icone-allergeni/molluschi.png', label: 'Molluschi' },
+		lupini: { src: '/icone-allergeni/lupini.png', label: 'Lupini' }
 	};
 	
 	// Filtra solo allergeni validi
@@ -32,7 +30,7 @@
 		{#each validAllergens as allergen}
 			{@const config = allergenIconMap[allergen]}
 			<span class="allergen-icon" title={config.label}>
-				<svelte:component this={config.icon} size={size} strokeWidth={1.5} />
+				<img src={config.src} alt={config.label} width={size} height={size} />
 			</span>
 		{/each}
 	</div>
@@ -42,7 +40,7 @@
 	.allergen-icons {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.3rem;
+		gap: 0.4rem;
 		align-items: center;
 		margin-top: 0.4rem;
 	}
@@ -51,20 +49,27 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		color: rgba(0, 0, 0, 0.5);
-		transition: color 0.2s ease;
+		transition: all 0.2s ease;
+		opacity: 0.9;
 	}
 	
 	.allergen-icon:hover {
-		color: rgba(0, 0, 0, 0.8);
+		opacity: 1;
+		transform: scale(1.15);
 	}
 	
-	/* Stile per card con sfondo immagine (testo bianco) */
+	.allergen-icon img {
+		display: block;
+	}
+	
+	/* Stile per card con sfondo immagine (icone con sfondo bianco per visibilità) */
 	:global(.has-image) .allergen-icon {
-		color: rgba(255, 255, 255, 0.7);
+		background-color: rgba(255, 255, 255, 0.9);
+		border-radius: 4px;
+		padding: 2px;
 	}
 	
 	:global(.has-image) .allergen-icon:hover {
-		color: rgba(255, 255, 255, 1);
+		background-color: rgba(255, 255, 255, 1);
 	}
 </style>

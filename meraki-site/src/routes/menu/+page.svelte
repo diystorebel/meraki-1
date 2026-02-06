@@ -355,7 +355,7 @@
 									{#if item.description}
 										<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
 									{/if}
-									<AllergenIcons allergens={item.allergens} size={14} />
+									<AllergenIcons allergens={item.allergens} size={32} />
 									<div class="product-price">
 										{#if item.pricing.type === 'single'}
 											€ {item.pricing.value.toFixed(2)}
@@ -381,7 +381,7 @@
 									{#if item.description}
 										<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
 									{/if}
-									<AllergenIcons allergens={item.allergens} size={14} />
+									<AllergenIcons allergens={item.allergens} size={32} />
 									<div class="product-price">
 										{#if item.pricing.type === 'single'}
 											€ {item.pricing.value.toFixed(2)}
@@ -475,7 +475,7 @@
 																				{#if item.description}
 																					<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
 																				{/if}
-																				<AllergenIcons allergens={item.allergens} size={14} />
+																				<AllergenIcons allergens={item.allergens} size={32} />
 																			</div>
 																			<div class="product-price">
 																				{#if item.pricing.type === 'single'}
@@ -506,7 +506,7 @@
 																				{#if item.description}
 																					<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
 																				{/if}
-																				<AllergenIcons allergens={item.allergens} size={14} />
+																				<AllergenIcons allergens={item.allergens} size={32} />
 																			</div>
 																			<div class="product-price">
 																				{#if item.pricing.type === 'single'}
@@ -583,7 +583,7 @@
 																		{#if item.description}
 																			<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
 																		{/if}
-																		<AllergenIcons allergens={item.allergens} size={14} />
+																		<AllergenIcons allergens={item.allergens} size={32} />
 																	</div>
 																	<div class="product-price">
 																		{#if item.pricing.type === 'single'}
@@ -614,7 +614,7 @@
 																		{#if item.description}
 																			<p class="product-desc">{capitalizeFirstLetter(item.description)}</p>
 																		{/if}
-																		<AllergenIcons allergens={item.allergens} size={14} />
+																		<AllergenIcons allergens={item.allergens} size={32} />
 																	</div>
 																	<div class="product-price">
 																		{#if item.pricing.type === 'single'}

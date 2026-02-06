@@ -1,90 +1,88 @@
 <script>
-	import { Wheat, Milk, Egg, Fish, Nut, Leaf, Sprout, Grape, Shell } from 'lucide-svelte';
-	
 	// 14 allergeni obbligatori EU con icone e descrizioni
 	const ALLERGENI = [
 		{ 
 			id: 'glutine', 
 			label: 'Glutine', 
-			icon: Wheat,
+			src: '/icone-allergeni/glutine.png',
 			description: 'Cereali contenenti glutine (grano, segale, orzo, avena, farro, kamut)'
 		},
 		{ 
 			id: 'latticini', 
 			label: 'Latte e derivati', 
-			icon: Milk,
+			src: '/icone-allergeni/latticini.png',
 			description: 'Latte e prodotti a base di latte, incluso il lattosio'
 		},
 		{ 
 			id: 'uova', 
 			label: 'Uova', 
-			icon: Egg,
+			src: '/icone-allergeni/uova.png',
 			description: 'Uova e prodotti a base di uova'
 		},
 		{ 
 			id: 'pesce', 
 			label: 'Pesce', 
-			icon: Fish,
+			src: '/icone-allergeni/pesce.png',
 			description: 'Pesci e prodotti a base di pesce'
 		},
 		{ 
 			id: 'crostacei', 
 			label: 'Crostacei', 
-			icon: Shell,
+			src: '/icone-allergeni/crostacei.png',
 			description: 'Crostacei e prodotti a base di crostacei'
 		},
 		{ 
 			id: 'molluschi', 
 			label: 'Molluschi', 
-			icon: Shell,
+			src: '/icone-allergeni/molluschi.png',
 			description: 'Molluschi e prodotti a base di molluschi'
 		},
 		{ 
 			id: 'arachidi', 
 			label: 'Arachidi', 
-			icon: Nut,
+			src: '/icone-allergeni/arachidi.png',
 			description: 'Arachidi e prodotti a base di arachidi'
 		},
 		{ 
 			id: 'frutta_guscio', 
 			label: 'Frutta a guscio', 
-			icon: Nut,
+			src: '/icone-allergeni/frutta_guscio.png',
 			description: 'Mandorle, nocciole, noci, anacardi, pistacchi, noci macadamia, noci del Brasile, noci pecan'
 		},
 		{ 
 			id: 'soia', 
 			label: 'Soia', 
-			icon: Leaf,
+			src: '/icone-allergeni/soia.png',
 			description: 'Soia e prodotti a base di soia'
 		},
 		{ 
 			id: 'sedano', 
 			label: 'Sedano', 
-			icon: Sprout,
+			src: '/icone-allergeni/sedano.png',
 			description: 'Sedano e prodotti a base di sedano'
 		},
 		{ 
 			id: 'senape', 
 			label: 'Senape', 
-			icon: Sprout,
+			src: '/icone-allergeni/senape.png',
 			description: 'Senape e prodotti a base di senape'
 		},
 		{ 
 			id: 'sesamo', 
 			label: 'Sesamo', 
-			icon: Sprout,
+			src: '/icone-allergeni/sesamo.png',
 			description: 'Semi di sesamo e prodotti a base di semi di sesamo'
 		},
 		{ 
 			id: 'solfiti', 
 			label: 'Anidride solforosa e solfiti', 
-			icon: Grape,
+			src: '/icone-allergeni/solfiti.png',
 			description: 'Anidride solforosa e solfiti in concentrazioni superiori a 10 mg/kg o 10 mg/l'
 		},
 		{ 
 			id: 'lupini', 
 			label: 'Lupini', 
-			icon: Leaf,
+			src: '/icone-allergeni/lupini.png',
 			description: 'Lupini e prodotti a base di lupini'
 		}
 	];
@@ -123,7 +121,7 @@
 				{#each ALLERGENI as allergen}
 					<div class="allergen-card">
 						<div class="allergen-icon">
-							<svelte:component this={allergen.icon} size={28} strokeWidth={1.5} />
+							<img src={allergen.src} alt={allergen.label} width="48" height="48" />
 						</div>
 						<div class="allergen-info">
 							<h3>{allergen.label}</h3>
@@ -241,15 +239,22 @@
 	}
 
 	.allergen-icon {
-		width: 48px;
-		height: 48px;
-		background: var(--verde-meraki);
+		width: 64px;
+		height: 64px;
+		background: white;
 		border-radius: 12px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: white;
 		flex-shrink: 0;
+		padding: 8px;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+	}
+
+	.allergen-icon img {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
 	}
 
 	.allergen-info {
@@ -329,8 +334,8 @@
 		}
 
 		.allergen-icon {
-			width: 56px;
-			height: 56px;
+			width: 80px;
+			height: 80px;
 			margin: 0 auto;
 		}
 

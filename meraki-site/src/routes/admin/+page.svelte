@@ -176,20 +176,20 @@
 	
 	// Lista allergeni disponibili (14 allergeni obbligatori EU) con icone
 	const AVAILABLE_ALLERGENS = [
-		{ id: 'glutine', label: 'Glutine', icon: Wheat },
-		{ id: 'latticini', label: 'Latticini', icon: Milk },
-		{ id: 'uova', label: 'Uova', icon: Egg },
-		{ id: 'pesce', label: 'Pesce', icon: Fish },
-		{ id: 'arachidi', label: 'Arachidi', icon: Nut },
-		{ id: 'frutta_guscio', label: 'Frutta a guscio', icon: Nut },
-		{ id: 'soia', label: 'Soia', icon: Leaf },
-		{ id: 'sedano', label: 'Sedano', icon: Sprout },
-		{ id: 'senape', label: 'Senape', icon: Sprout },
-		{ id: 'sesamo', label: 'Sesamo', icon: Sprout },
-		{ id: 'solfiti', label: 'Solfiti', icon: Grape },
-		{ id: 'crostacei', label: 'Crostacei', icon: Shell },
-		{ id: 'molluschi', label: 'Molluschi', icon: Shell },
-		{ id: 'lupini', label: 'Lupini', icon: Leaf }
+		{ id: 'glutine', label: 'Glutine', src: '/icone-allergeni/glutine.png' },
+		{ id: 'latticini', label: 'Latticini', src: '/icone-allergeni/latticini.png' },
+		{ id: 'uova', label: 'Uova', src: '/icone-allergeni/uova.png' },
+		{ id: 'pesce', label: 'Pesce', src: '/icone-allergeni/pesce.png' },
+		{ id: 'arachidi', label: 'Arachidi', src: '/icone-allergeni/arachidi.png' },
+		{ id: 'frutta_guscio', label: 'Frutta a guscio', src: '/icone-allergeni/frutta_guscio.png' },
+		{ id: 'soia', label: 'Soia', src: '/icone-allergeni/soia.png' },
+		{ id: 'sedano', label: 'Sedano', src: '/icone-allergeni/sedano.png' },
+		{ id: 'senape', label: 'Senape', src: '/icone-allergeni/senape.png' },
+		{ id: 'sesamo', label: 'Sesamo', src: '/icone-allergeni/sesamo.png' },
+		{ id: 'solfiti', label: 'Solfiti', src: '/icone-allergeni/solfiti.png' },
+		{ id: 'crostacei', label: 'Crostacei', src: '/icone-allergeni/crostacei.png' },
+		{ id: 'molluschi', label: 'Molluschi', src: '/icone-allergeni/molluschi.png' },
+		{ id: 'lupini', label: 'Lupini', src: '/icone-allergeni/lupini.png' }
 	];
 	
 	function toggleAllergen(allergenId) {
@@ -1587,7 +1587,7 @@
 										on:click={() => toggleAllergen(allergen.id)}
 									>
 										<span class="allergen-icon-wrapper">
-											<svelte:component this={allergen.icon} size={18} />
+											<img src={allergen.src} alt={allergen.label} width="24" height="24" />
 										</span>
 										<span class="allergen-label">{allergen.label}</span>
 										{#if formData.allergens.includes(allergen.id)}
@@ -1607,7 +1607,7 @@
 											{@const allergen = AVAILABLE_ALLERGENS.find(a => a.id === allergenId)}
 											{#if allergen}
 												<span class="summary-chip">
-													<svelte:component this={allergen.icon} size={14} />
+													<img src={allergen.src} alt={allergen.label} width="18" height="18" />
 													{allergen.label}
 												</span>
 											{/if}
@@ -3803,9 +3803,15 @@
 	/* Allergens Grid - Improved UI */
 	.allergens-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+		grid-template-columns: repeat(2, 1fr);
 		gap: 0.6rem;
 		margin-top: 1rem;
+	}
+
+	@media (min-width: 768px) {
+		.allergens-grid {
+			grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+		}
 	}
 	
 	.allergen-chip {
@@ -3841,6 +3847,11 @@
 		align-items: center;
 		justify-content: center;
 		flex-shrink: 0;
+	}
+
+	.allergen-icon-wrapper img {
+		display: block;
+		object-fit: contain;
 	}
 	
 	.allergen-label {
