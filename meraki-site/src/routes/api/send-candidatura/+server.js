@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 
 // Configurazione destinatario email
-const EMAIL_DESTINATARIO = 'meraki.lainate@gmail.com';
+const EMAIL_DESTINATARIO = 'Teamerakicurriculum@gmail.com';
 
 export async function POST({ request }) {
 	try {
