@@ -802,7 +802,7 @@
 				<div class="aperitivo-content">
 					<h3>🍸 Aperitivo fino alle 21:00</h3>
 					<p class="aperitivo-desc">
-						Scegli il cocktail che preferisci dal nostro menu e aggiungi una selezione di stuzzichini preparati al momento dal nostro chef!
+						Scegli la bevanda che preferisci dal nostro menu e aggiungi una selezione di stuzzichini preparati al momento dal nostro chef!
 					</p>
 					
 					<div class="aperitivo-pricing">
