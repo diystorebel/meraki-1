@@ -16,6 +16,7 @@
 	let showModal = false;
 	let searchFilter = '';
 	let categoryFilter = '';
+	let subcategoryFilter = '';
 	let availabilityFilter = ''; // 'all', 'available', 'unavailable'
 
 	// Category management
@@ -204,11 +205,30 @@
 		const matchSearch = !searchFilter || 
 			item.name.toLowerCase().includes(searchFilter.toLowerCase());
 		const matchCategory = !categoryFilter || getCategoryName(item.category_id) === categoryFilter;
+		const matchSubcategory = !subcategoryFilter || item.subcategory === subcategoryFilter;
 		const matchAvailability = !availabilityFilter || 
 			(availabilityFilter === 'available' && item.is_available !== false) ||
 			(availabilityFilter === 'unavailable' && item.is_available === false);
-		return matchSearch && matchCategory && matchAvailability;
+		return matchSearch && matchCategory && matchSubcategory && matchAvailability;
 	});
+
+	// Ottieni sottocategorie per il filtro basato sulla categoria selezionata
+	$: availableSubcategoriesForFilter = categoryFilter 
+		? (() => {
+				const cat = $categoriesStore.find(c => c.name === categoryFilter);
+				return cat ? cat.subcategories.map(s => s.name) : [];
+		  })()
+		: [];
+	
+	// Reset subcategory filter quando cambia la categoria
+	$: if (categoryFilter) {
+		const validSubcats = availableSubcategoriesForFilter;
+		if (subcategoryFilter && !validSubcats.includes(subcategoryFilter)) {
+			subcategoryFilter = '';
+		}
+	} else {
+		subcategoryFilter = '';
+	}
 
 	async function handleLogin(e) {
 		e.preventDefault();
@@ -898,6 +918,12 @@
 							<option value={cat.name}>{cat.name}</option>
 						{/each}
 					</select>
+					<select bind:value={subcategoryFilter} class="filter-select" disabled={!categoryFilter}>
+						<option value="">Tutte le sottocategorie</option>
+						{#each availableSubcategoriesForFilter as subcat}
+							<option value={subcat}>{subcat}</option>
+						{/each}
+					</select>
 					<select bind:value={availabilityFilter} class="filter-select">
 						<option value="">Tutti i prodotti</option>
 						<option value="available">Disponibili</option>
@@ -1443,7 +1469,7 @@
 									<select bind:value={formData.subcategory} class="select-modern" disabled={!formData.category_id}>
 										<option value="">Nessuna</option>
 										{#each availableSubcategories as subcat}
-											<option value={subcat}>{subcat}</option>
+											<option value={subcat.name}>{subcat.name}</option>
 										{/each}
 									</select>
 								</div>
