@@ -817,7 +817,7 @@
 					</div>
 					
 					<p class="aperitivo-note">
-						<strong>Come funziona:</strong> Ordina il tuo cocktail preferito e comunica al nostro staff che vuoi l'aperitivo. Riceverai una selezione di stuzzichini freschi preparati al momento!
+						<strong>Come funziona:</strong> Ordina una bevanda e comunica al nostro staff che vuoi l'aperitivo. Riceverai una selezione di stuzzichini freschi preparati al momento!
 					</p>
 				</div>
 			</div>
