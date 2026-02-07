@@ -7,6 +7,7 @@
 	import Clock from 'lucide-svelte/icons/clock';
 	import Image from 'lucide-svelte/icons/image';
 	import Calendar from 'lucide-svelte/icons/calendar';
+	import Briefcase from 'lucide-svelte/icons/briefcase';
 	import { loadEventiVisibili, getStatoEvento } from '$lib/stores/eventiStore';
 
 	let showSplash = false;
@@ -141,6 +142,12 @@
 				<h2>Eventi</h2>
 				<p>Cosa succede da noi</p>
 			</a>
+
+			<!-- Lavora con Noi -->
+			<a href="/lavora-con-noi" class="dash-card dash-card-lavora">
+				<h2>Lavora con Noi</h2>
+				<p>Unisciti al nostro team</p>
+			</a>
 		</div>
 
 		<!-- Footer Minimal -->
@@ -150,8 +157,6 @@
 				<a href="/cookie-policy">Cookie</a>
 				<span>•</span>
 				<a href="/privacy-policy">Privacy</a>
-				<span>•</span>
-				<a href="/lavora-con-noi">Lavora con Noi</a>
 			</div>
 		</footer>
 	</div>
@@ -512,6 +517,41 @@
 
 	.footer-links .demo-link {
 		color: #9b59b6;
+	}
+
+	/* Lavora con Noi - Solo testo, sottile e bassa con effetto vivace */
+	.dash-card-lavora {
+		grid-column: 1 / -1;
+		min-height: auto;
+		padding: 0.9rem 1rem;
+		gap: 0.3rem;
+		position: relative;
+		background: var(--bianco);
+		border: 1px solid #e5e5e5;
+		animation: subtlePulse 2s ease-in-out infinite;
+	}
+
+	@keyframes subtlePulse {
+		0%, 100% {
+			transform: scale(1);
+			box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+		}
+		50% {
+			transform: scale(1.01);
+			box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+		}
+	}
+
+	.dash-card-lavora > * {
+		position: relative;
+		z-index: 1;
+	}
+
+	@media (min-width: 768px) {
+		.dash-card-lavora {
+			padding: 1.2rem 2rem;
+			gap: 0.4rem;
+		}
 	}
 
 </style>
