@@ -8,6 +8,7 @@
 	import Image from 'lucide-svelte/icons/image';
 	import Calendar from 'lucide-svelte/icons/calendar';
 	import Briefcase from 'lucide-svelte/icons/briefcase';
+	import UtensilsCrossed from 'lucide-svelte/icons/utensils-crossed';
 	import { loadEventiVisibili, getStatoEvento } from '$lib/stores/eventiStore';
 
 	let showSplash = false;
@@ -114,12 +115,16 @@
 			</a>
 
 			<!-- Orari e Contatti -->
-			<a href="/contatti" class="dash-card">
+			<a href="/contatti" class="dash-card dash-card-orari">
 				<div class="card-icon">
 					<Clock size={28} strokeWidth={1.5} class="icon-responsive" />
 				</div>
 				<h2>Orari & Contatti</h2>
 				<p>Vieni a trovarci</p>
+				<div class="info-pill">
+					<UtensilsCrossed size={12} strokeWidth={1.5} />
+					<span>Aperti a pranzo</span>
+				</div>
 			</a>
 
 			<!-- Gallery -->
@@ -230,6 +235,10 @@
 		animation: fadeInScale 0.8s ease-out 0.3s backwards;
 		position: relative;
 		z-index: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 1rem;
 	}
 
 	@keyframes fadeInScale {
@@ -317,6 +326,38 @@
 		min-height: 140px;
 		position: relative;
 		overflow: visible;
+	}
+
+	/* Card Orari - con pill extra */
+	.dash-card-orari {
+		gap: 0.4rem;
+	}
+
+	.info-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		background: rgba(21, 67, 21, 0.06);
+		color: var(--verde-meraki);
+		padding: 0.25rem 0.55rem;
+		border-radius: 20px;
+		font-size: 0.6rem;
+		font-weight: 400;
+		margin-top: 0.15rem;
+		opacity: 0.75;
+		transition: all 0.3s ease;
+	}
+
+	@media (min-width: 768px) {
+		.info-pill {
+			font-size: 0.65rem;
+			padding: 0.3rem 0.65rem;
+		}
+	}
+
+	.dash-card-orari:hover .info-pill {
+		opacity: 1;
+		background: rgba(21, 67, 21, 0.1);
 	}
 
 	.news-badge-home {
