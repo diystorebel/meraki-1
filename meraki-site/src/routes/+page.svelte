@@ -50,13 +50,13 @@
 
 <svelte:head>
 	<title>Meraki - L'essenza di noi stessi</title>
-	<meta name="description" content="Cocktail bar a Lainate. Scopri i nostri cocktails artigianali, drinks e food in un'atmosfera unica. L'essenza di noi stessi." />
+	<meta name="description" content="Cocktail bar a Lainate aperto anche a pranzo. Scopri i nostri cocktails artigianali, drinks, pranzo e food in un'atmosfera unica. L'essenza di noi stessi." />
 	
 	<!-- Open Graph / Facebook -->
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content="https://www.merakilainate.it/" />
 	<meta property="og:title" content="Meraki - L'essenza di noi stessi" />
-	<meta property="og:description" content="Cocktail bar a Lainate. Scopri i nostri cocktails artigianali, drinks e food in un'atmosfera unica." />
+	<meta property="og:description" content="Cocktail bar a Lainate aperto anche a pranzo. Scopri i nostri cocktails artigianali, drinks, pranzo e food." />
 	<meta property="og:image" content="https://www.merakilainate.it/og-image.jpg" />
 	<meta property="og:image:width" content="1200" />
 	<meta property="og:image:height" content="630" />
@@ -66,7 +66,7 @@
 	<!-- Twitter Card -->
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="twitter:title" content="Meraki - L'essenza di noi stessi" />
-	<meta name="twitter:description" content="Cocktail bar a Lainate. Scopri i nostri cocktails artigianali, drinks e food." />
+	<meta name="twitter:description" content="Cocktail bar a Lainate aperto anche a pranzo. Scopri i nostri cocktails artigianali, drinks, pranzo e food." />
 	<meta name="twitter:image" content="https://www.merakilainate.it/og-image.jpg" />
 	
 	<!-- Preload font critico per LCP -->

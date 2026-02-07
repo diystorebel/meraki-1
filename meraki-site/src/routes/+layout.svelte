@@ -12,7 +12,7 @@
 	// SEO Configuration
 	const siteUrl = 'https://www.merakilainate.it';
 	const siteName = 'Meraki Lainate';
-	const siteDescription = 'Cocktail bar a Lainate. Scopri i nostri cocktails artigianali, drinks e food in un\'atmosfera unica. L\'essenza di noi stessi.';
+	const siteDescription = 'Cocktail bar a Lainate aperto anche a pranzo. Scopri i nostri cocktails artigianali, drinks, pranzo e food in un\'atmosfera unica. L\'essenza di noi stessi.';
 	const siteImage = `${siteUrl}/og-image.jpg`;
 
 	// JSON-LD Structured Data for LocalBusiness
@@ -42,22 +42,34 @@
 		"openingHoursSpecification": [
 			{
 				"@type": "OpeningHoursSpecification",
-				"dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Sunday"],
-				"opens": "18:00",
-				"closes": "01:00"
+				"dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+				"opens": "10:30",
+				"closes": "15:00"
 			},
 			{
 				"@type": "OpeningHoursSpecification",
-				"dayOfWeek": ["Friday", "Saturday"],
-				"opens": "18:00",
-				"closes": "02:00"
+				"dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+				"opens": "17:30",
+				"closes": "22:30"
+			},
+			{
+				"@type": "OpeningHoursSpecification",
+				"dayOfWeek": ["Saturday"],
+				"opens": "17:30",
+				"closes": "00:00"
+			},
+			{
+				"@type": "OpeningHoursSpecification",
+				"dayOfWeek": ["Sunday"],
+				"opens": "17:30",
+				"closes": "22:30"
 			}
 		],
 		"sameAs": [
 			"https://www.facebook.com/meraki.lainate",
 			"https://www.instagram.com/meraki.lainate/"
 		],
-		"servesCuisine": ["Cocktails", "Drinks", "Finger Food"],
+		"servesCuisine": ["Cocktails", "Drinks", "Pranzo", "Lunch", "Finger Food"],
 		"priceRange": "€€"
 	};
 
@@ -80,7 +92,7 @@
 <svelte:head>
 	<!-- SEO Meta Tags -->
 	<meta name="description" content={siteDescription} />
-	<meta name="keywords" content="cocktail bar, bar lainate, aperitivo lainate, drinks, cocktails artigianali, nightlife milano, meraki" />
+	<meta name="keywords" content="cocktail bar, bar lainate, aperitivo lainate, pranzo lainate, aperto pranzo, lunch bar, drinks, cocktails artigianali, nightlife milano, meraki" />
 	<meta name="author" content="Meraki Lainate" />
 	<meta name="robots" content="index, follow" />
 	<link rel="canonical" href={siteUrl} />
