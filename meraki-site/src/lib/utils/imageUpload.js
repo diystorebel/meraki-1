@@ -46,7 +46,7 @@ export async function uploadMenuImage(file, fileName) {
 		return { url: publicUrl, error: null };
 	} catch (error) {
 		console.error('Image processing error:', error);
-		return { url: null, error: error.message };
+		return { url: null, error: error?.message ?? String(error) ?? 'Errore sconosciuto durante il processing' };
 	}
 }
 
@@ -122,7 +122,7 @@ export async function uploadGalleryImage(file, fileName) {
 		return { url: publicUrl, error: null };
 	} catch (error) {
 		console.error('Gallery image processing error:', error);
-		return { url: null, error: error.message };
+		return { url: null, error: error?.message ?? String(error) ?? 'Errore sconosciuto durante il processing' };
 	}
 }
 

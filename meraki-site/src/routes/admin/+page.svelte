@@ -567,8 +567,8 @@
 				const fileName = `gallery_${Date.now()}_${file.name}`;
 				const uploadResult = await uploadGalleryImage(file, fileName);
 
-				if (uploadResult.error) {
-					galleryUploadError = `Errore su ${file.name}: ${uploadResult.error}`;
+				if (uploadResult.error || !uploadResult.url) {
+					galleryUploadError = `Errore su ${file.name}: ${uploadResult.error ?? 'URL immagine non disponibile dopo upload'}`;
 				} else {
 					const result = await addGalleryImage(uploadResult.url, '', themeId);
 					if (!result.success) {
