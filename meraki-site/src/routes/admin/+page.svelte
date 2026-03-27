@@ -467,8 +467,8 @@
 			const fileName = `${Date.now()}_${file.name}`;
 			const result = await uploadMenuImage(file, fileName);
 
-			if (result.error) {
-				uploadError = result.error;
+			if (result.error || !result.url) {
+				uploadError = result.error ?? 'URL immagine non disponibile dopo upload';
 			} else {
 				formData.image_url = result.url;
 			}
@@ -1350,13 +1350,13 @@
 														await deleteMenuImage(eventoFormData.immagine_url);
 													}
 
-													const fileName = `evento_${Date.now()}_${file.name}`;
-													const result = await uploadMenuImage(file, fileName);
-													if (result.error) {
-														eventoUploadError = result.error;
-													} else {
-														eventoFormData.immagine_url = result.url;
-													}
+												const fileName = `evento_${Date.now()}_${file.name}`;
+												const result = await uploadMenuImage(file, fileName);
+												if (result.error || !result.url) {
+													eventoUploadError = result.error ?? 'URL immagine non disponibile dopo upload';
+												} else {
+													eventoFormData.immagine_url = result.url;
+												}
 												} catch (error) {
 													eventoUploadError = error.message;
 												} finally {

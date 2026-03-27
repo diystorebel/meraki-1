@@ -19,7 +19,9 @@ export async function uploadMenuImage(file, fileName) {
 		};
 
 		// Compress image
+		console.log(`[uploadMenuImage] start — name=${file.name} size=${file.size} type=${file.type}`);
 		const compressedFile = await imageCompression(file, options);
+		console.log(`[uploadMenuImage] compressed — size=${compressedFile.size}`);
 		
 		// Generate WebP filename (supports jpg, png, heic/heif iPhone, gif, avif, bmp, tiff)
 		const webpFileName = fileName.replace(/\.(jpg|jpeg|png|heic|heif|gif|avif|bmp|tiff|tif|webp)$/i, '.webp');
@@ -95,7 +97,9 @@ export async function uploadGalleryImage(file, fileName) {
 		};
 
 		// Compress image
+		console.log(`[uploadGalleryImage] start — name=${file.name} size=${file.size} type=${file.type}`);
 		const compressedFile = await imageCompression(file, options);
+		console.log(`[uploadGalleryImage] compressed — size=${compressedFile.size}`);
 		
 		// Generate WebP filename (supports jpg, png, heic/heif iPhone, gif, avif, bmp, tiff)
 		const webpFileName = fileName.replace(/\.(jpg|jpeg|png|heic|heif|gif|avif|bmp|tiff|tif|webp)$/i, '.webp');
