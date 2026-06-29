@@ -2,6 +2,56 @@ import imageCompression from 'browser-image-compression';
 import { supabase } from '$lib/supabaseClient';
 
 /**
+ * Comprime un'immagine in modo resiliente.
+ * Catena di fallback pensata per Android (worker bloccati nei browser in-app,
+ * foto ad altissima risoluzione che mandano in OOM il canvas):
+ *  1) tentativo con Web Worker
+ *  2) tentativo senza Web Worker (browser in-app, worker non disponibili)
+ *  3) ultima spiaggia: carica il file originale così com'è (meglio pesante che niente)
+ *
+ * @param {File} file
+ * @param {Object} options - opzioni base per browser-image-compression (senza useWebWorker)
+ * @returns {Promise<{blob: Blob, ext: string, contentType: string}>}
+ */
+async function compressForUpload(file, options) {
+	// 1) tentativo principale con web worker
+	try {
+		const out = await imageCompression(file, { ...options, useWebWorker: true });
+		if (out && out.size > 0) {
+			return { blob: out, ext: 'webp', contentType: 'image/webp' };
+		}
+		console.warn('[compressForUpload] worker ha prodotto un file vuoto, fallback');
+	} catch (e) {
+		console.warn('[compressForUpload] tentativo con worker fallito:', e?.message ?? e);
+	}
+
+	// 2) retry senza web worker (tipico browser in-app Android)
+	try {
+		const out = await imageCompression(file, { ...options, useWebWorker: false });
+		if (out && out.size > 0) {
+			return { blob: out, ext: 'webp', contentType: 'image/webp' };
+		}
+		console.warn('[compressForUpload] no-worker ha prodotto un file vuoto, fallback');
+	} catch (e) {
+		console.warn('[compressForUpload] tentativo no-worker fallito:', e?.message ?? e);
+	}
+
+	// 3) ultima spiaggia: carica l'originale mantenendo estensione e content-type reali
+	const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+	return {
+		blob: file,
+		ext: ext === 'heic' || ext === 'heif' ? 'jpg' : ext,
+		contentType: file.type || 'application/octet-stream'
+	};
+}
+
+/** Sostituisce l'estensione del filename con quella effettiva del blob caricato. */
+function withExtension(fileName, ext) {
+	const base = fileName.replace(/\.(jpg|jpeg|png|heic|heif|gif|avif|bmp|tiff|tif|webp)$/i, '');
+	return `${base}.${ext}`;
+}
+
+/**
  * Compress and upload image to Supabase Storage
  * @param {File} file - Image file to upload
  * @param {string} fileName - Name for the file (will overwrite if exists)
@@ -9,30 +59,26 @@ import { supabase } from '$lib/supabaseClient';
  */
 export async function uploadMenuImage(file, fileName) {
 	try {
-		// Compression options - più aggressive per eventi
+		// Qualità: leggera ma nitida (popup/card menu). 1600px max, fino a ~0.6MB.
 		const options = {
-			maxSizeMB: 0.3, // Ridotto da 0.5 a 0.3 (300KB max)
-			maxWidthOrHeight: 1200, // Ridotto da 1920 a 1200 per popup
-			useWebWorker: true,
-			fileType: 'image/webp', // Convert to WebP for best compression
-			initialQuality: 0.8, // Qualità iniziale più bassa
+			maxSizeMB: 0.6,
+			maxWidthOrHeight: 1600,
+			initialQuality: 0.82,
+			fileType: 'image/webp'
 		};
 
-		// Compress image
 		console.log(`[uploadMenuImage] start — name=${file.name} size=${file.size} type=${file.type}`);
-		const compressedFile = await imageCompression(file, options);
-		console.log(`[uploadMenuImage] compressed — size=${compressedFile.size}`);
-		
-		// Generate WebP filename (supports jpg, png, heic/heif iPhone, gif, avif, bmp, tiff)
-		const webpFileName = fileName.replace(/\.(jpg|jpeg|png|heic|heif|gif|avif|bmp|tiff|tif|webp)$/i, '.webp');
-		const filePath = `${webpFileName}`;
+		const { blob, ext, contentType } = await compressForUpload(file, options);
+		console.log(`[uploadMenuImage] compressed — size=${blob.size} ext=${ext}`);
 
-		// Upload to Supabase Storage (upsert = true to overwrite)
-		const { data, error } = await supabase.storage
+		const filePath = withExtension(fileName, ext);
+
+		const { error } = await supabase.storage
 			.from('menu-images')
-			.upload(filePath, compressedFile, {
+			.upload(filePath, blob, {
 				cacheControl: '3600',
-				upsert: true, // Overwrite if exists
+				upsert: true,
+				contentType
 			});
 
 		if (error) {
@@ -40,7 +86,6 @@ export async function uploadMenuImage(file, fileName) {
 			return { url: null, error: error.message };
 		}
 
-		// Get public URL
 		const { data: { publicUrl } } = supabase.storage
 			.from('menu-images')
 			.getPublicUrl(filePath);
@@ -88,29 +133,26 @@ export async function deleteMenuImage(fileUrl) {
  */
 export async function uploadGalleryImage(file, fileName) {
 	try {
-		// Compression options for gallery images
+		// Gallery: qualità più alta (immagini a tutto schermo). 2400px max, fino a ~1MB.
 		const options = {
-			maxSizeMB: 1, // Slightly larger for gallery
+			maxSizeMB: 1,
 			maxWidthOrHeight: 2400,
-			useWebWorker: true,
-			fileType: 'image/webp',
+			initialQuality: 0.82,
+			fileType: 'image/webp'
 		};
 
-		// Compress image
 		console.log(`[uploadGalleryImage] start — name=${file.name} size=${file.size} type=${file.type}`);
-		const compressedFile = await imageCompression(file, options);
-		console.log(`[uploadGalleryImage] compressed — size=${compressedFile.size}`);
-		
-		// Generate WebP filename (supports jpg, png, heic/heif iPhone, gif, avif, bmp, tiff)
-		const webpFileName = fileName.replace(/\.(jpg|jpeg|png|heic|heif|gif|avif|bmp|tiff|tif|webp)$/i, '.webp');
-		const filePath = `${webpFileName}`;
+		const { blob, ext, contentType } = await compressForUpload(file, options);
+		console.log(`[uploadGalleryImage] compressed — size=${blob.size} ext=${ext}`);
 
-		// Upload to Supabase Storage gallery bucket
-		const { data, error } = await supabase.storage
+		const filePath = withExtension(fileName, ext);
+
+		const { error } = await supabase.storage
 			.from('gallery')
-			.upload(filePath, compressedFile, {
+			.upload(filePath, blob, {
 				cacheControl: '3600',
 				upsert: true,
+				contentType
 			});
 
 		if (error) {
@@ -118,7 +160,6 @@ export async function uploadGalleryImage(file, fileName) {
 			return { url: null, error: error.message };
 		}
 
-		// Get public URL
 		const { data: { publicUrl } } = supabase.storage
 			.from('gallery')
 			.getPublicUrl(filePath);
@@ -157,4 +198,3 @@ export async function deleteGalleryImage(fileUrl) {
 		return { success: false, error: error.message };
 	}
 }
-

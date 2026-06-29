@@ -740,35 +740,39 @@
 				{/if}
 				
 				<div class="evento-content">
-					<h2 class="evento-title">{eventoCorrente.titolo}</h2>
-					
-					{#if eventoCorrente.sottotitolo}
-						<p class="evento-subtitle">{eventoCorrente.sottotitolo}</p>
-					{/if}
-					
-					{#if eventoCorrente.descrizione}
-						<p class="evento-desc">{eventoCorrente.descrizione}</p>
-					{/if}
-					
-					<div class="evento-dates">
-						<div class="evento-date-item">
-							<span class="date-label">Inizio:</span>
-							<span class="date-value">
-								{formatEventoDate(eventoCorrente.data_inizio)}
-							</span>
-						</div>
-						<div class="evento-date-item">
-							<span class="date-label">Fine:</span>
-							<span class="date-value">
-								{formatEventoDate(eventoCorrente.data_fine)}
-							</span>
+					<div class="evento-body">
+						<h2 class="evento-title">{eventoCorrente.titolo}</h2>
+
+						{#if eventoCorrente.sottotitolo}
+							<p class="evento-subtitle">{eventoCorrente.sottotitolo}</p>
+						{/if}
+
+						{#if eventoCorrente.descrizione}
+							<p class="evento-desc">{eventoCorrente.descrizione}</p>
+						{/if}
+
+						<div class="evento-dates">
+							<div class="evento-date-item">
+								<span class="date-label">Inizio:</span>
+								<span class="date-value">
+									{formatEventoDate(eventoCorrente.data_inizio)}
+								</span>
+							</div>
+							<div class="evento-date-item">
+								<span class="date-label">Fine:</span>
+								<span class="date-value">
+									{formatEventoDate(eventoCorrente.data_fine)}
+								</span>
+							</div>
 						</div>
 					</div>
-					
-					<a href="tel:+393517318400" class="prenota-btn">
-						<Phone size={20} />
-						<span>Prenota ora</span>
-					</a>
+
+					<div class="evento-footer">
+						<a href="tel:+393517318400" class="prenota-btn">
+							<Phone size={20} />
+							<span>Prenota ora</span>
+						</a>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -2102,10 +2106,28 @@
 	}
 	
 	.evento-content {
+		display: flex;
+		flex-direction: column;
+		flex: 1 1 auto;
+		min-height: 0; /* permette allo scroll interno di funzionare */
+		overflow: hidden;
+	}
+
+	.evento-body {
 		padding: 2rem 1.5rem;
 		overflow-y: auto;
+		flex: 1 1 auto;
+		min-height: 0;
 	}
-	
+
+	.evento-footer {
+		flex-shrink: 0;
+		padding: 1rem 1.5rem 1.25rem;
+		background: var(--white);
+		border-top: 1px solid rgba(0, 0, 0, 0.06);
+		box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.05);
+	}
+
 	.evento-title {
 		font-family: 'Playfair Display', serif;
 		font-size: 2rem;
@@ -2166,7 +2188,7 @@
 		justify-content: center;
 		gap: 0.75rem;
 		width: 100%;
-		margin-top: 1.5rem;
+		margin-top: 0;
 		padding: 1rem 2rem;
 		background: linear-gradient(135deg, var(--primary) 0%, #1a5a1a 100%);
 		color: white;
@@ -2228,11 +2250,14 @@
 			font-size: 1rem;
 		}
 		
-		.evento-content {
+		.evento-body {
 			padding: 1.5rem 1.25rem;
-			overflow-y: auto; /* Aggiungi scroll se necessario */
 		}
-		
+
+		.evento-footer {
+			padding: 0.85rem 1.25rem 1.1rem;
+		}
+
 		.prenota-btn {
 			font-size: 1rem;
 			padding: 0.9rem 1.5rem;
