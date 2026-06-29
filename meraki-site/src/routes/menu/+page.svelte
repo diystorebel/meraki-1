@@ -814,6 +814,10 @@
 							<span class="price-label">Senza glutine o lattosio</span>
 							<span class="price-value">+ €5,00</span>
 						</div>
+						<div class="price-item">
+							<span class="price-label">Vegano</span>
+							<span class="price-value">+ €5,00</span>
+						</div>
 					</div>
 					
 					<p class="aperitivo-note">
