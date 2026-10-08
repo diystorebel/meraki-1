@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { categoriesStore } from '$lib/stores/categoriesStore.js';
 	import { menuStore } from '$lib/stores/menuStore.js';
-	import { eventiStore, loadEventiVisibili, getStatoEvento, getBadgeText } from '$lib/stores/eventiStore.js';
+	import { eventiStore, loadEventiVisibili, getEventoPrioritario, getStatoEvento, getBadgeText } from '$lib/stores/eventiStore.js';
 	import { smartSearch } from '$lib/utils/smartSearch.js';
 	import { fade, slide } from 'svelte/transition';
 	import { X, Search, Home, ChevronDown, ArrowLeft, Calendar, Phone, Wine, Info, Salad, Package, Wheat, Martini } from 'lucide-svelte';
@@ -59,7 +59,7 @@
 		
 		// Mostra popup se ci sono eventi
 		if (eventiVisibili.length > 0) {
-			eventoCorrente = eventiVisibili[0]; // Mostra il primo evento
+			eventoCorrente = getEventoPrioritario(eventiVisibili);
 			showEventoPopup = true;
 		}
 	});

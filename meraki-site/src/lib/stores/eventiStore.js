@@ -53,6 +53,20 @@ export async function loadEventiVisibili() {
     }
 }
 
+// Sceglie l'evento da mostrare nel popup del menu.
+// Priorità: eventi IN CORSO prima di quelli IN ARRIVO; tra quelli in corso vince
+// quello che finisce prima (l'evento breve/speciale batte la promo di tutto il mese),
+// tra quelli in arrivo vince quello che inizia prima.
+export function getEventoPrioritario(eventi) {
+    if (!eventi?.length) return null;
+    const now = new Date();
+    const inCorso = eventi.filter(e => new Date(e.data_inizio) <= now);
+    if (inCorso.length > 0) {
+        return [...inCorso].sort((a, b) => new Date(a.data_fine) - new Date(b.data_fine))[0];
+    }
+    return [...eventi].sort((a, b) => new Date(a.data_inizio) - new Date(b.data_inizio))[0];
+}
+
 // Alias per retrocompatibilità
 export async function loadEventiAttivi() {
     return loadEventiVisibili();
