@@ -12,7 +12,6 @@
 	import { loadEventiVisibili, getStatoEvento } from '$lib/stores/eventiStore';
 
 	let showSplash = false;
-	let showDashboard = false;
 	let eventiVisibili = [];
 	let eventiBadgeText = null;
 
@@ -27,13 +26,7 @@
 			// Splash screen per 2.5 secondi
 			setTimeout(() => {
 				showSplash = false;
-				setTimeout(() => {
-					showDashboard = true;
-				}, 300);
 			}, 2500);
-		} else {
-			// Mostra direttamente la dashboard
-			showDashboard = true;
 		}
 
 		// Carica eventi in background (non blocca il rendering)
@@ -78,7 +71,7 @@
 
 <!-- Splash Screen -->
 {#if showSplash}
-	<div class="splash-screen" transition:fade={{ duration: 500 }}>
+	<div class="splash-screen" out:fade={{ duration: 500 }}>
 		<div class="splash-content" transition:scale={{ duration: 800, delay: 200 }}>
 			<h1 class="splash-title">MERAKI</h1>
 			<p class="splash-subtitle">L'essenza di noi stessi</p>
@@ -86,12 +79,11 @@
 	</div>
 {/if}
 
-<!-- Dashboard -->
-{#if showDashboard}
-	<div class="dashboard" transition:fade={{ duration: 600 }}>
+<!-- Dashboard: sempre nell'HTML (bot e AI non eseguono JavaScript); al primo ingresso lo splash la copre -->
+<div class="dashboard">
 		<!-- Logo -->
 		<div class="logo-container">
-			<img src="/Logo-1.png" alt="Meraki Logo" class="dashboard-logo" width="1200" height="413" fetchpriority="high" decoding="async" />
+			<img src="/Logo-1.png" alt="Meraki, cocktail bar a Lainate" class="dashboard-logo" width="1200" height="413" fetchpriority="high" decoding="async" />
 		</div>
 
 		<!-- Dashboard Grid -->
@@ -157,6 +149,7 @@
 
 		<!-- Footer Minimal -->
 		<footer class="dash-footer">
+			<p class="footer-info">Meraki, cocktail bar a Lainate (MI) aperto anche a pranzo. Via Re Umberto I, 36A, 20045 Lainate. Tel. <a href="tel:+393516327144">351 632 7144</a></p>
 			<p>© 2026 Meraki Lainate</p>
 			<div class="footer-links">
 				<a href="/cookie-policy">Cookie</a>
@@ -165,7 +158,6 @@
 			</div>
 		</footer>
 	</div>
-{/if}
 
 <style>
 	/* Splash Screen */
@@ -536,6 +528,15 @@
 
 	.dash-footer p {
 		margin-bottom: 0.5rem;
+	}
+
+	.footer-info {
+		font-size: 0.8rem;
+		opacity: 0.85;
+	}
+
+	.footer-info a {
+		color: inherit;
 	}
 
 	.footer-links {
