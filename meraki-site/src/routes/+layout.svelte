@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
+	import { page } from '$app/stores';
 	import { initAuth } from '$lib/stores/authStore';
 	import { loadCategories } from '$lib/stores/categoriesStore';
 	import { loadMenu } from '$lib/stores/menuStore';
@@ -14,6 +15,11 @@
 	const siteName = 'Meraki Lainate';
 	const siteDescription = 'Cocktail bar a Lainate aperto anche a pranzo. Scopri i nostri cocktails artigianali, drinks, pranzo e food in un\'atmosfera unica. L\'essenza di noi stessi.';
 	const siteImage = `${siteUrl}/og-image.jpg`;
+
+	// Ogni pagina è canonica di sé stessa (prima puntavano tutte alla home e Google indicizzava solo quella)
+	$: pageUrl = $page.url.pathname === '/' ? siteUrl : `${siteUrl}${$page.url.pathname.replace(/\/$/, '')}`;
+	// Pannello admin e prototipi del menu: raggiungibili ma fuori da Google
+	$: noIndex = /^\/(admin|menu-demo|menu-v\d+)(\/|$)/.test($page.url.pathname);
 
 	// JSON-LD Structured Data for LocalBusiness
 	const jsonLd = {
@@ -94,12 +100,12 @@
 	<meta name="description" content={siteDescription} />
 	<meta name="keywords" content="cocktail bar, bar lainate, aperitivo lainate, pranzo lainate, aperto pranzo, lunch bar, drinks, cocktails artigianali, nightlife milano, meraki" />
 	<meta name="author" content="Meraki Lainate" />
-	<meta name="robots" content="index, follow" />
-	<link rel="canonical" href={siteUrl} />
+	<meta name="robots" content={noIndex ? 'noindex, nofollow' : 'index, follow'} />
+	<link rel="canonical" href={pageUrl} />
 	
 	<!-- Open Graph / Facebook -->
 	<meta property="og:type" content="website" />
-	<meta property="og:url" content={siteUrl} />
+	<meta property="og:url" content={pageUrl} />
 	<meta property="og:title" content={siteName} />
 	<meta property="og:description" content={siteDescription} />
 	<meta property="og:image" content={siteImage} />
@@ -110,7 +116,7 @@
 	
 	<!-- Twitter Card -->
 	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="twitter:url" content={siteUrl} />
+	<meta name="twitter:url" content={pageUrl} />
 	<meta name="twitter:title" content={siteName} />
 	<meta name="twitter:description" content={siteDescription} />
 	<meta name="twitter:image" content={siteImage} />
